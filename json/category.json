@@ -1,0 +1,32 @@
+[
+  {
+    "category": "グルメ",
+    "subcategory": "ラーメン",
+    "icon_path": "image/key.png",
+    "color": "#ef4444"
+  },
+  {
+    "category": "グルメ",
+    "subcategory": "カフェ",
+    "icon_path": "image/key.png",
+    "color": "#ef4444"
+  },
+  {
+    "category": "買い物",
+    "subcategory": "スーパー",
+    "icon_path": "image/key.png",
+    "color": "#3b82f6"
+  },
+  {
+    "category": "買い物",
+    "subcategory": "コンビニ",
+    "icon_path": "image/key.png",
+    "color": "#3b82f6"
+  },
+  {
+    "category": "観光・レジャー",
+    "subcategory": "公園",
+    "icon_path": "image/key.png",
+    "color": "#10b981"
+  }
+]

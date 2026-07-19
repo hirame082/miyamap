@@ -1,0 +1,944 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>みやま市ローカルマップ (管理・開発用)</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+    <!-- Leaflet CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <!-- Material Icons -->
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+    
+    <style>
+        html, body {
+            margin: 0; padding: 0; width: 100%; height: 100%;
+            background-color: #0f172a; font-family: sans-serif; overflow: hidden;
+        }
+        #map { width: 100%; height: 100%; background: #0f172a; }
+        .custom-div-icon { background: none; border: none; }
+        
+        .leaflet-popup-content-wrapper {
+            background-color: #0f172a !important;
+            border: 1px solid #334155 !important;
+            border-radius: 12px !important;
+            box-shadow: 0 10px 25px -5px rgb(0 0 0 / 0.5) !important;
+            min-width: 280px !important;
+        }
+        .leaflet-popup-content { margin: 12px !important; width: auto !important; }
+        .leaflet-popup-tip {
+            background-color: #0f172a !important;
+            border-left: 1px solid #334155 !important;
+            border-bottom: 1px solid #334155 !important;
+        }
+
+        .leaflet-bar { border: none !important; box-shadow: none !important; margin: 0 !important; border-radius: 0 !important; }
+        .leaflet-bar a {
+            background-color: #0f172a !important; color: #94a3b8 !important; border: 1px solid #1e293b !important;
+            border-top: none !important; width: 40px !important; height: 40px !important; line-height: 40px !important;
+            font-size: 16px !important; transition: all 0.2s; display: flex !important; align-items: center; justify-content: center;
+        }
+        .leaflet-bar a:hover { background-color: #1e293b !important; color: #ffffff !important; }
+        .leaflet-bar a:last-child { border-bottom-left-radius: 12px !important; border-bottom-right-radius: 12px !important; }
+
+        ::-webkit-scrollbar { width: 5px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #334155; border-radius: 9999px; }
+        ::-webkit-scrollbar-thumb:hover { background: #475569; }
+
+        #loading {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(15, 23, 42, 0.85); z-index: 9999;
+            display: flex; justify-content: center; align-items: center;
+            opacity: 0; pointer-events: none; transition: opacity 0.3s ease;
+        }
+        #loading.active { opacity: 1; pointer-events: auto; }
+        .spinner {
+            width: 40px; height: 40px; border: 4px solid rgba(255,255,255,0.1);
+            border-top-color: #3b82f6; border-radius: 50%; animation: spin 1s linear infinite;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+    </style>
+</head>
+<body class="relative flex w-full h-full text-slate-200">
+
+    <div id="loading"><div class="spinner"></div></div>
+
+    <!-- 左側サイドバーセクション -->
+    <div id="sidebar" class="w-[320px] h-full bg-slate-900/95 backdrop-blur-md border-r border-slate-800 flex flex-col shrink-0 z-[1000] transition-all duration-300 relative">
+        <div class="p-4 border-b border-slate-800 flex flex-col gap-3 bg-slate-950/40">
+            <div class="flex justify-between items-center">
+                <div class="flex items-center gap-2">
+                    <span class="material-icons text-amber-400">construction</span>
+                    <h1 class="font-bold text-sm tracking-wide text-white">みやま市マップ (管理用)</h1>
+                </div>
+                <button id="btn-info" class="text-slate-400 hover:text-emerald-400 transition-colors cursor-pointer">
+                    <span class="material-icons text-xl">info</span>
+                </button>
+            </div>
+            
+            <!-- 閲覧/編集モード切り替えトグル -->
+            <div class="flex bg-slate-950/60 p-1 rounded-xl border border-slate-800">
+                <button id="mode-view" class="flex-1 py-1.5 text-xs font-bold rounded-lg transition-all flex items-center justify-center gap-1 bg-emerald-600 text-white cursor-pointer">
+                    <span class="material-icons text-sm">visibility</span>閲覧中
+                </button>
+                <button id="mode-edit" class="flex-1 py-1.5 text-xs font-bold rounded-lg transition-all flex items-center justify-center gap-1 text-slate-400 hover:text-slate-200 cursor-pointer">
+                    <span class="material-icons text-sm">edit</span>編集する
+                </button>
+            </div>
+        </div>
+
+        <!-- 検索・絞り込みエリア -->
+        <div class="p-4 flex flex-col gap-3 border-b border-slate-800/60">
+            <div class="relative">
+                <span class="material-icons absolute left-3 top-2.5 text-slate-500 text-sm">search</span>
+                <input type="text" id="search-input" placeholder="店名や住所で検索..." class="w-full bg-slate-950/60 border border-slate-800 focus:border-slate-700 rounded-xl pl-9 pr-4 py-2 text-xs text-slate-200 outline-none placeholder:text-slate-600 transition-all font-bold">
+            </div>
+
+            <!-- カテゴリの折り畳み（アコーディオン） -->
+            <details class="group bg-slate-950/40 border border-slate-800/80 rounded-xl overflow-hidden">
+                <summary class="flex justify-between items-center px-3 py-2.5 text-xs font-bold text-slate-300 cursor-pointer hover:bg-slate-900/40 select-none list-none [&::-webkit-details-marker]:hidden">
+                    <div class="flex items-center gap-1.5">
+                        <span class="material-icons text-slate-500 text-sm">filter_alt</span>
+                        <span>カテゴリを絞り込む</span>
+                    </div>
+                    <span class="material-icons text-slate-500 text-sm transition-transform duration-200 group-open:rotate-180">expand_more</span>
+                </summary>
+                
+                <!-- チェックボックスのエリア -->
+                <div id="filter-checkboxes-container" class="px-3 pb-3 pt-1 flex flex-col gap-2 border-t border-slate-900/60 bg-slate-950/20">
+    
+                </div>
+            </details>
+        </div>
+
+        <!-- スポット一覧 -->
+        <div class="flex-1 overflow-y-auto p-4 flex flex-col gap-2.5 bg-slate-900/30" id="spot-list-container">
+            <div id="list-counter" class="text-[10px] text-slate-500 font-bold tracking-wider px-1">該当スポット: 0 件</div>
+            <div id="spot-list" class="flex flex-col gap-2"></div>
+        </div>
+    </div>
+
+    <!-- 左下操作コンテナ -->
+    <div class="absolute bottom-6 left-6 z-[1001] flex flex-col shadow-2xl rounded-xl overflow-hidden">
+        <button id="toggle-sidebar" class="bg-slate-900 hover:bg-slate-800 border border-slate-800 text-slate-400 hover:text-white w-10 h-10 flex items-center justify-center transition-all cursor-pointer rounded-t-xl">
+            <span class="material-icons" id="sidebar-icon">menu_open</span>
+        </button>
+        <div id="zoom-control-wrapper" class="flex flex-col"></div>
+    </div>
+
+    <!-- メイン地図領域 -->
+    <div class="flex-1 h-full relative">
+        <div id="map"></div>
+        <button id="btn-reset-view" class="absolute bottom-6 right-6 z-[1000] bg-slate-900 hover:bg-slate-800 border border-slate-800 text-slate-400 hover:text-white w-10 h-10 rounded-xl shadow-2xl flex items-center justify-center transition-all cursor-pointer">
+            <span class="material-icons">my_location</span>
+        </button>
+    </div>
+
+    <!-- Infoモーダル -->
+    <div id="info-modal" class="fixed inset-0 z-[2000] hidden items-center justify-center bg-black/70 backdrop-blur-sm transition-opacity duration-300 opacity-0">
+        <div class="bg-slate-900 border border-slate-800 w-[90%] max-w-md p-6 rounded-2xl shadow-2xl flex flex-col gap-4 text-slate-300">
+            <div class="flex justify-between items-center border-b border-slate-800 pb-3">
+                <div class="flex items-center gap-2 font-bold text-white text-sm">
+                    <span class="material-icons text-amber-400 text-lg">construction</span>
+                    <span>管理用マップについて</span>
+                </div>
+                <button id="close-info" class="text-slate-500 hover:text-slate-300 cursor-pointer"><span class="material-icons">close</span></button>
+            </div>
+            <div class="text-xs space-y-3 leading-relaxed">
+                <p>データ追加用の管理用画面です。大カテゴリ・小カテゴリの構成定義は `json/category.json` を動的に参照しています。</p>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/leaflet-boundary-canvas@1.0.0/src/BoundaryCanvas.js"></script>
+
+    <script>
+        const GAS_WEB_APP_URL = "https://script.google.com/macros/s/AKfycbyA7x0IN0kvK9q1sSCRzFGIFm-bsR5USbLTsQG80PpfbHD9ySwbgDDTCyPVcvDik_Iw/exec";
+
+        const miyamaBorderLatLng = [
+            [33.18635418549079, 130.55241793544099], [33.190159490685225, 130.53472024103644],
+            [33.18833287377129, 130.50907369822042], [33.185984310513966, 130.49044292766723],
+            [33.18585383279454, 130.47415074565],     [33.17632844469694, 130.47072081329426],
+            [33.17130436391597, 130.45700108298794],  [33.16303835573494, 130.4505265489401],
+            [33.14666096940182, 130.44584659675203],  [33.11860073474425, 130.4272203874322],
+            [33.10353695847264, 130.4078708598711],   [33.095608334113415, 130.3872995693444],
+            [33.08541008852506, 130.38984959565784],  [33.07909402856037, 130.39910520386425],
+            [33.06597428509903, 130.41177052462777],  [33.07018955853409, 130.43142732066585],
+            [33.07285724782254, 130.44391189224342],  [33.083856841971766, 130.4564934294682],
+            [33.085565650168476, 130.47082491328803], [33.08242511223391, 130.48322716145165],
+            [33.08732060779959, 130.51007113473892],  [33.08043912605376, 130.52407189345288],
+            [33.07908140166218, 130.54169061215322],  [33.08159342625597, 130.5793963403277],
+            [33.09974698080774, 130.57854232597015],  [33.11156260700514, 130.57247187426483], 
+            [33.13074214638127, 130.5670330118785],   [33.135841539393084, 130.567555743066],
+            [33.14134595387898, 130.5577805555186],   [33.155705930321744, 130.55708657479175],
+            [33.161955669977374, 130.54479173622758], [33.169702150562, 130.54661540370586],
+            [33.17733649353649, 130.54760680474422],  [33.18415887915106, 130.55494141032403],
+            [33.18635418549079, 130.55241793544099]
+        ];
+
+        // 範囲外検知用に、みやま市のポリゴンオブジェクトを作成
+        const miyamaPolygonForCheck = L.polygon(miyamaBorderLatLng);
+
+        const miyamaGeoJSON = {
+            "type": "Feature",
+            "geometry": { "type": "Polygon", "coordinates": [miyamaBorderLatLng.map(coord => [coord[1], coord[0]])] }
+        };
+
+        const MAP_DEFAULT_CENTER = [33.127466262080105, 130.49817935838587];
+        const MAP_DEFAULT_ZOOM = 14;
+
+        const map = L.map('map', { zoomControl: false, maxZoom: 18, minZoom: 13, keepBuffer: 4 }).setView(MAP_DEFAULT_CENTER, MAP_DEFAULT_ZOOM);
+        L.control.zoom({ position: 'bottomleft' }).addTo(map);
+        const zoomControlEl = document.querySelector('.leaflet-bottom.leaflet-left .leaflet-control-zoom');
+        if (zoomControlEl) document.getElementById('zoom-control-wrapper').appendChild(zoomControlEl);
+
+        const miyamaBounds = L.latLngBounds([32.95948876991778, 130.22305621802062], [33.264972980181696, 130.6578015599507]);
+        map.setMaxBounds(miyamaBounds);
+
+        L.TileLayer.boundaryCanvas('https://tile.openstreetmap.jp/{z}/{x}/{y}.png', {
+            boundary: miyamaGeoJSON, attribution: '&copy; OpenStreetMap contributors', maxZoom: 19
+        }).addTo(map);
+
+        const blurryEdge = L.polygon(miyamaBorderLatLng, { color: '#0f172a', weight: 30, opacity: 0.9, fill: false, interactive: false }).addTo(map);
+        blurryEdge.getElement().style.filter = 'blur(15px)';
+        L.polygon(miyamaBorderLatLng, { color: '#0f172a', weight: 6, opacity: 0.9, fillColor: 'transparent', interactive: false }).addTo(map);
+
+        let appState = {
+            spots: [],
+            sidebarOpen: true,
+            activeCategories: [''], 
+            searchQuery: '',
+            editMode: false
+        };
+        const activeMarkers = new Map();
+        let categoriesMaster = []; 
+        let tempMarker = null;    
+
+        function toggleLoading(show) {
+            const loader = document.getElementById('loading');
+            if (loader) {
+                if (show) loader.classList.add('active');
+                else loader.classList.remove('active');
+            }
+        }
+
+        async function loadCategoryMaster() {
+            try {
+                const response = await fetch('./json/category.json?v=' + Date.now());
+                if (!response.ok) {
+                    throw new Error(`JSONファイルの取得に失敗しました。ステータス: ${response.status}`);
+                }
+                categoriesMaster = await response.json();
+                console.log("JSONの参照に成功しました:", categoriesMaster);
+
+                const uniqueCategories = [...new Set(categoriesMaster.map(item => item.category))];
+                appState.activeCategories = uniqueCategories; 
+
+                buildCategoryFilter();
+
+            } catch (e) {
+                console.error("🛑 カテゴリJSONの参照エラー。処理を中断します:", e);
+                alert("エラー: category.json が正しく読み込めません。パスまたはファイル内容を確認してください。");
+                throw e; 
+            }
+        }
+
+        function getCategoryConfig(category) {
+            return categoriesMaster.find(item => item.category === category)
+                || {
+                    color: "#8b5cf6",
+                    icon_path: null
+                };
+        }
+
+        async function loadDataFromSpreadsheet() {
+            toggleLoading(true);
+            try {
+                const response = await fetch(GAS_WEB_APP_URL);
+                const data = await response.json();
+                appState.spots = data.spots ? data.spots : data;
+                applyFilterAndSearch();
+            } catch (error) {
+                console.error("データの取得に失敗しました:", error);
+            } finally {
+                toggleLoading(false);
+            }
+        }
+
+        function buildCategoryFilter() {
+
+    const container = document.getElementById("filter-checkboxes-container");
+
+    container.innerHTML = "";
+
+    const uniqueCategories =
+        [...new Set(categoriesMaster.map(item => item.category))];
+
+    uniqueCategories.forEach(category => {
+
+        const config =
+            categoriesMaster.find(item => item.category === category);
+
+        const label = document.createElement("label");
+
+        label.className =
+            "flex items-center gap-2 cursor-pointer text-slate-300 hover:text-white text-xs py-0.5 select-none";
+
+        label.innerHTML = `
+            <input
+                type="checkbox"
+                checked
+                data-category="${category}"
+                class="category-checkbox rounded border-slate-700 bg-slate-900">
+
+            <span
+                class="w-2.5 h-2.5 rounded-full inline-block"
+                style="background-color:${config.color}">
+            </span>
+
+            <span>${category}</span>
+        `;
+
+        container.appendChild(label);
+    });
+
+    document.querySelectorAll(".category-checkbox")
+        .forEach(chk => {
+
+            chk.addEventListener("change", function () {
+
+                const cat = this.dataset.category;
+
+                if (this.checked) {
+
+                    if (!appState.activeCategories.includes(cat)) {
+                        appState.activeCategories.push(cat);
+                    }
+
+                } else {
+
+                    appState.activeCategories =
+                        appState.activeCategories.filter(c => c !== cat);
+
+                }
+
+                applyFilterAndSearch();
+
+            });
+
+        });
+
+}
+
+        // ① jsonの "icon_path" または "image" からカスタムアイコン画像を動的に参照する処理
+        function createCustomIcon(categoryName) {
+            const config = getCategoryConfig(categoryName);
+            
+            // "icon_path" または "image" が定義されている場合は、その画像ファイルをピンとして読み込む
+            const iconUrl = config ? (config.icon_path || config.image) : null;
+            if (iconUrl) {
+                return L.icon({
+                    iconUrl: iconUrl,
+                    iconSize: [28, 28],       // アイコンの表示サイズ
+                    iconAnchor: [14, 28],     // ピンの設置先端（中心下部）
+                    popupAnchor: [0, -28]     // ポップアップの出現位置
+                });
+            }
+
+            // 画像URLが無い場合のフォールバック（従来のDivIcon形状）
+            const color = config ? config.color : '#8b5cf6';
+            return L.divIcon({
+                html: `
+                    <div class="flex items-center justify-center w-[17px] h-[17px] rounded-full border border-slate-700 shadow-lg text-white" style="background-color: ${color};">
+                        <span class="material-icons" style="font-size: 9px;">place</span>
+                    </div>
+                `,
+                className: 'custom-div-icon',
+                iconSize: [17, 17],
+                iconAnchor: [8, 8]
+            });
+        }
+
+        function buildPopupHTML(spot) {
+            const config = getCategoryConfig(spot.category);
+            const subLabel = spot.subcategory ? ` · ${spot.subcategory}` : "";
+            
+            let html = `
+                <div class="p-1 text-slate-200 flex flex-col gap-2 min-w-[250px] leading-relaxed select-text text-xs">
+                    <div class="border-b border-slate-700 pb-1.5">
+                        <h4 class="font-bold text-sm text-white break-all">${spot.name}</h4>
+                        <span class="text-[9px] px-2 py-0.5 mt-1 inline-block rounded-full border font-bold tracking-wider text-white" style="background-color: ${config.color}20; border-color: ${config.color}50; color: ${config.color};">
+                            ${spot.category}${subLabel}
+                        </span>
+                    </div>
+            `;
+            if (spot.address) html += `<div class="flex items-start gap-1.5 text-slate-300"><span class="material-icons text-slate-400 shrink-0" style="font-size:13px; margin-top:2px;">place</span><span class="break-all">${spot.address}</span></div>`;
+            if (spot.hours) html += `<div class="flex items-start gap-1.5 text-slate-300"><span class="material-icons text-slate-400 shrink-0" style="font-size:13px; margin-top:2px;">schedule</span><span class="break-all">${spot.hours}</span></div>`;
+            if (spot.phone_fixed || spot.phone_mobile) {
+                const tel = spot.phone_fixed || spot.phone_mobile;
+                html += `<div class="flex items-center gap-1.5 text-slate-300"><span class="material-icons text-slate-400 shrink-0" style="font-size:13px;">phone</span><span class="break-all">${tel}</span></div>`;
+            }
+            if (spot.desc) html += `<p class="text-slate-400 mt-1 pt-1.5 border-t border-slate-800/60 italic break-all text-[11px]">${spot.desc}</p>`;
+            
+            html += `
+                <div class="flex gap-2 mt-2 pt-2 border-t border-slate-800">
+                    <button onclick="openEditForm('${spot.id}')" class="flex-1 bg-slate-800 hover:bg-slate-700 text-slate-200 py-1 rounded text-[10px] font-bold transition-all border border-slate-700 flex items-center justify-center gap-0.5 cursor-pointer">
+                        <span class="material-icons" style="font-size:11px;">edit</span>編集
+                    </button>
+                    <button onclick="deleteSpotFromServer('${spot.id}')" class="flex-1 bg-rose-950/40 hover:bg-rose-900/60 text-rose-400 py-1 rounded text-[10px] font-bold transition-all border border-rose-900/50 flex items-center justify-center gap-0.5 cursor-pointer">
+                        <span class="material-icons" style="font-size:11px;">delete</span>削除
+                    </button>
+                </div>
+            `;
+            
+            html += `</div>`;
+            return html;
+        }
+
+        function renderSpotOnMap(spot) {
+            const lat = Number(spot.lat);
+            const lng = Number(spot.lng);
+            if (!lat || !lng) return;
+
+            const marker = L.marker([lat, lng], { icon: createCustomIcon(spot.category) });
+            marker.bindPopup(buildPopupHTML(spot), { maxWidth: 280, closeButton: false });
+            
+            marker.on('mouseover', function () {
+                if (!this.isPopupOpen()) this.openPopup();
+            });
+            
+            marker.addTo(map);
+            activeMarkers.set(spot.id, marker);
+        }
+
+        function applyFilterAndSearch() {
+            activeMarkers.forEach(marker => map.removeLayer(marker));
+            activeMarkers.clear();
+
+            let filtered = appState.spots.filter(spot => {
+                const matchCategory = appState.activeCategories.includes(spot.category);
+                const query = appState.searchQuery.toLowerCase().trim();
+                const matchSearch = !query || 
+                    spot.name.toLowerCase().includes(query) || 
+                    (spot.address && spot.address.toLowerCase().includes(query)) || 
+                    (spot.desc && spot.desc.toLowerCase().includes(query));
+                    
+                return matchCategory && matchSearch;
+            });
+
+            filtered.sort((a, b) => String(a.id).localeCompare(String(b.id)));
+            filtered.forEach(spot => renderSpotOnMap(spot));
+            updateSpotListUI(filtered);
+        }
+
+        function updateSpotListUI(displaySpots) {
+            const listContainer = document.getElementById('spot-list');
+            const counter = document.getElementById('list-counter');
+            
+            counter.textContent = `該当スポット: ${displaySpots.length} 件`;
+            listContainer.innerHTML = '';
+
+            if (displaySpots.length === 0) {
+                listContainer.innerHTML = `<div class="text-center py-12 text-slate-500 text-xs italic">該当するスポットはありません。</div>`;
+                return;
+            }
+
+            displaySpots.forEach(spot => {
+                const config = getCategoryConfig(category);
+                const subLabel = spot.subcategory ? ` · ${spot.subcategory}` : "";
+
+                const card = document.createElement('div');
+                card.className = `bg-slate-950/45 border border-slate-800 hover:border-slate-700 hover:bg-slate-950/70 p-3 rounded-xl flex flex-col gap-1.5 cursor-pointer transition-all hover:translate-x-1 text-slate-200`;
+                
+                let detailsHTML = '';
+                if (spot.address) detailsHTML += `<div class="text-[11px] text-slate-400 flex items-start gap-1"><span class="material-icons text-slate-500 shrink-0" style="font-size:11px; margin-top:1px;">place</span><span class="truncate">${spot.address}</span></div>`;
+                if (spot.desc) detailsHTML += `<p class="text-[11px] text-slate-400 mt-0.5 line-clamp-2 italic break-all border-t border-slate-800/60 pt-1">${spot.desc}</p>`;
+
+                card.innerHTML = `
+                    <div class="flex justify-between items-start gap-2">
+                        <h4 class="font-bold text-xs truncate text-white max-w-[145px]">${spot.name}</h4>
+                        <span class="text-[8px] px-1.5 py-0.5 rounded-full border font-bold shrink-0 text-white" style="background-color: ${config.color}20; border-color: ${config.color}50; color: ${config.color};">${spot.category}${subLabel}</span>
+                    </div>
+                    ${detailsHTML}
+                `;
+
+                card.addEventListener('click', () => {
+                    map.setView([spot.lat, spot.lng], 16);
+                    const marker = activeMarkers.get(spot.id);
+                    if (marker) marker.openPopup();
+                    if (window.innerWidth < 768) setSidebarState(false);
+                });
+                listContainer.appendChild(card);
+            });
+        }
+
+        const modeViewBtn = document.getElementById('mode-view');
+        const modeEditBtn = document.getElementById('mode-edit');
+
+        function setMode(isEdit) {
+            appState.editMode = isEdit;
+            cancelRegistration(); 
+
+            if (isEdit) {
+                modeEditBtn.className = "flex-1 py-1.5 text-xs font-bold rounded-lg transition-all flex items-center justify-center gap-1 bg-amber-600 text-white cursor-pointer";
+                modeViewBtn.className = "flex-1 py-1.5 text-xs font-bold rounded-lg transition-all flex items-center justify-center gap-1 text-slate-400 hover:text-slate-200 cursor-pointer";
+            } else {
+                modeViewBtn.className = "flex-1 py-1.5 text-xs font-bold rounded-lg transition-all flex items-center justify-center gap-1 bg-emerald-600 text-white cursor-pointer";
+                modeEditBtn.className = "flex-1 py-1.5 text-xs font-bold rounded-lg transition-all flex items-center justify-center gap-1 text-slate-400 hover:text-slate-200 cursor-pointer";
+            }
+        }
+
+        modeViewBtn.addEventListener('click', () => setMode(false));
+        modeEditBtn.addEventListener('click', () => setMode(true));
+
+        // マップクリックで新規登録フォームを開く処理
+        map.on('click', function(e) {
+            if (!appState.editMode) return; 
+
+            // ① 【修正点】クリック座標がみやま市（miyamaBorderLatLng）のポリゴン内にあるか厳密に判定
+            const clickLatLng = e.latlng;
+            
+            // ポリゴンの外側（範囲外）をクリックした場合は、エラー（アラート）を出して処理を遮断する
+            const bounds = miyamaPolygonForCheck.getBounds();
+            let isInside = bounds.contains(clickLatLng);
+
+            // getBoundsの四角形チェックを通過した場合のみ、さらに厳密なポリゴン内判定を実施
+            if (isInside) {
+                // レイセー法（Ray-casting algorithm）を用いたLeafletポリゴン内包チェックの簡易実装
+                let x = clickLatLng.lat, y = clickLatLng.lng;
+                let inside = false;
+                for (let i = 0, j = miyamaBorderLatLng.length - 1; i < miyamaBorderLatLng.length; j = i++) {
+                    let xi = miyamaBorderLatLng[i][0], yi = miyamaBorderLatLng[i][1];
+                    let xj = miyamaBorderLatLng[j][0], yj = miyamaBorderLatLng[j][1];
+                    let intersect = ((yi > y) !== (yj > y)) && (x < (xj - xi) * (y - yi) / (yj - yi) + xi);
+                    if (intersect) inside = !inside;
+                }
+                isInside = inside;
+            }
+
+            if (!isInside) {
+                alert("❌ エラー: みやま市の管轄範囲外にピンを配置することはできません。");
+                return;
+            }
+
+            if (tempMarker) map.removeLayer(tempMarker);
+
+            // ② 【修正点】新規にピンを刺すときも、デフォルトのピンではなく json の画像を参照したカスタムアイコンにする
+            const defaultCat = categoriesMaster[0] ? categoriesMaster[0].category : '';
+            tempMarker = L.marker(clickLatLng, { icon: createCustomIcon(defaultCat) }).addTo(map);
+
+            const uniqueCategories = [...new Set(categoriesMaster.map(item => item.category))];
+            let categoryOptions = uniqueCategories.map(cat => {
+                return `<option value="${cat}">${cat}</option>`;
+            }).join('');
+            
+            let formHTML = `
+                <div class="p-1 text-slate-200 flex flex-col gap-2 min-w-[260px] text-xs font-sans">
+                    <div class="border-b border-slate-700 pb-1.5 flex justify-between items-center">
+                        <h4 class="font-bold text-white text-sm flex items-center gap-1"><span class="material-icons text-amber-400 text-base">add_location_alt</span>新規スポット登録</h4>
+                    </div>
+                    
+                    <div class="flex flex-col gap-2 max-h-[320px] overflow-y-auto pr-1">
+                        <div>
+                            <label class="block text-[10px] text-slate-400 mb-0.5 font-bold">店舗・スポット名 <span class="text-rose-400">*</span></label>
+                            <input type="text" id="form-name" class="w-full bg-slate-950 border border-slate-800 focus:border-slate-700 rounded px-2 py-1 text-xs outline-none text-white font-bold" placeholder="みやま商店">
+                        </div>
+                        
+                        <div class="grid grid-cols-2 gap-1.5">
+                            <div>
+                                <label class="block text-[10px] text-slate-400 mb-0.5 font-bold">大カテゴリ</label>
+                                <select id="form-category" class="w-full bg-slate-950 border border-slate-800 focus:border-slate-700 rounded px-1 py-1 text-xs outline-none text-slate-300 font-bold" onchange="updateFormSubcategories(this.value)">
+                                    <option value="">選択してください</option>
+                                    ${categoryOptions}
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-[10px] text-slate-400 mb-0.5 font-bold">小カテゴリ</label>
+                                <select id="form-subcategory" class="w-full bg-slate-950 border border-slate-800 focus:border-slate-700 rounded px-1 py-1 text-xs outline-none text-slate-300 font-bold">
+                                    <option value="">先に対カテゴリを選択</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div>
+                            <label class="block text-[10px] text-slate-400 mb-0.5 font-bold">住所</label>
+                            <input type="text" id="form-address" class="w-full bg-slate-950 border border-slate-800 focus:border-slate-700 rounded px-2 py-1 text-xs outline-none text-white" placeholder="みやま市瀬高町...">
+                        </div>
+
+                        <div class="grid grid-cols-2 gap-1.5">
+                            <div>
+                                <label class="block text-[10px] text-slate-400 mb-0.5 font-bold">固定電話</label>
+                                <input type="text" id="form-phone-fixed" class="w-full bg-slate-950 border border-slate-800 focus:border-slate-700 rounded px-2 py-1 text-xs outline-none text-white" placeholder="0944-XX-XXXX">
+                            </div>
+                            <div>
+                                <label class="block text-[10px] text-slate-400 mb-0.5 font-bold">携帯番号</label>
+                                <input type="text" id="form-phone-mobile" class="w-full bg-slate-950 border border-slate-800 focus:border-slate-700 rounded px-2 py-1 text-xs outline-none text-white" placeholder="090-XXXX-XXXX">
+                            </div>
+                        </div>
+
+                        <div>
+                            <label class="block text-[10px] text-slate-400 mb-0.5 font-bold">営業時間</label>
+                            <input type="text" id="form-hours" class="w-full bg-slate-950 border border-slate-800 focus:border-slate-700 rounded px-2 py-1 text-xs outline-none text-white" placeholder="11:00〜20:00 (水曜定休)">
+                        </div>
+
+                        <div>
+                            <label class="block text-[10px] text-slate-400 mb-0.5 font-bold">紹介文・備考</label>
+                            <textarea id="form-desc" rows="2" class="w-full bg-slate-950 border border-slate-800 focus:border-slate-700 rounded px-2 py-1 text-xs outline-none text-white resize-none" placeholder="地元で愛される老舗店です。"></textarea>
+                        </div>
+                    </div>
+
+                    <div class="flex gap-1.5 mt-1 pt-1.5 border-t border-slate-800">
+                        <button onclick="cancelRegistration()" class="flex-1 bg-slate-800 hover:bg-slate-700 text-slate-300 py-1.5 rounded text-[11px] font-bold transition-all border border-slate-700 cursor-pointer">キャンセル</button>
+                        <button onclick="submitToSpreadsheet(${clickLatLng.lat}, ${clickLatLng.lng})" class="flex-1 bg-emerald-600 hover:bg-emerald-500 text-white py-1.5 rounded text-[11px] font-bold transition-all shadow-lg shadow-emerald-900/40 cursor-pointer">保存する</button>
+                    </div>
+                </div>
+            `;
+
+            tempMarker.bindPopup(formHTML, { closeButton: false, closeOnClick: false }).openPopup();
+
+            // 選択された大カテゴリが変わったら、リアルタイムに新規ピンの画像も追従更新する
+            setTimeout(() => {
+                const selectEl = document.getElementById('form-category');
+                if(selectEl) {
+                    selectEl.addEventListener('change', (ev) => {
+                        if(ev.target.value && tempMarker) {
+                            tempMarker.setIcon(createCustomIcon(ev.target.value));
+                        }
+                    });
+                }
+            }, 50);
+        });
+
+        window.updateFormSubcategories = function(selectedCat) {
+            const catSelect = document.getElementById('form-category');
+            const subSelect = document.getElementById('form-subcategory');
+            if (!catSelect || !subSelect) return;
+
+            const activeCat = selectedCat || catSelect.value;
+            subSelect.innerHTML = '';
+
+            if (!activeCat) {
+                const opt = document.createElement('option');
+                opt.value = "";
+                opt.textContent = "先に対カテゴリを選択";
+                subSelect.appendChild(opt);
+                return;
+            }
+
+            const filteredSubs = categoriesMaster
+                .filter(item => item.category === activeCat)
+                .map(item => item.subcategory);
+
+            if (filteredSubs.length === 0) {
+                const opt = document.createElement('option');
+                opt.value = "その他";
+                opt.textContent = "その他";
+                subSelect.appendChild(opt);
+                return;
+            }
+
+            filteredSubs.forEach(subName => {
+                const opt = document.createElement('option');
+                opt.value = subName;
+                opt.textContent = subName;
+                subSelect.appendChild(opt);
+            });
+        };
+
+        window.cancelRegistration = function() {
+            if (tempMarker) {
+                map.removeLayer(tempMarker);
+                tempMarker = null;
+            }
+        };
+
+        window.submitToSpreadsheet = async function(lat, lng) {
+            const name = document.getElementById('form-name').value.trim();
+            if (!name) {
+                alert("店舗・スポット名は必須です！");
+                return;
+            }
+
+            const payload = {
+                action: "create", 
+                id: "spot_" + Date.now(),
+                category: document.getElementById('form-category').value,
+                subcategory: document.getElementById('form-subcategory').value,
+                name: name,
+                lat: lat,
+                lng: lng,
+                address: document.getElementById('form-address').value.trim(),
+                hours: document.getElementById('form-hours').value.trim(),
+                phone_fixed: document.getElementById('form-phone-fixed').value.trim(),
+                phone_mobile: document.getElementById('form-phone-mobile').value.trim(),
+                desc: document.getElementById('form-desc').value.trim()
+            };
+
+            toggleLoading(true);
+            try {
+                const response = await fetch(GAS_WEB_APP_URL, {
+                    method: 'POST',
+                    body: JSON.stringify(payload)
+                });
+                const result = await response.json();
+                
+                if (result.status === 'success') {
+                    cancelRegistration();
+                    appState.spots.push(payload);
+                    applyFilterAndSearch();
+                } else {
+                    alert("保存エラーが発生しました: " + result.message);
+                }
+            } catch (err) {
+                console.error("送信失敗:", err);
+                alert("通信エラーが発生しました。");
+            } finally {
+                toggleLoading(false);
+            }
+        };
+
+        window.openEditForm = function(spotId) {
+            const spot = appState.spots.find(s => String(s.id) === String(spotId));
+            const marker = activeMarkers.get(spotId);
+            if (!spot || !marker) return;
+
+            const uniqueCategories = [...new Set(categoriesMaster.map(item => item.category))];
+            let categoryOptions = uniqueCategories.map(cat => {
+                const selected = cat === spot.category ? 'selected' : '';
+                return `<option value="${cat}" ${selected}>${cat}</option>`;
+            }).join('');
+
+            let editFormHTML = `
+                <div class="p-1 text-slate-200 flex flex-col gap-2 min-w-[260px] text-xs font-sans">
+                    <div class="border-b border-slate-700 pb-1.5 flex justify-between items-center">
+                        <h4 class="font-bold text-white text-sm flex items-center gap-1"><span class="material-icons text-sky-400 text-base">edit_location</span>スポット情報の編集</h4>
+                    </div>
+                    
+                    <div class="flex flex-col gap-2 max-h-[320px] overflow-y-auto pr-1">
+                        <div>
+                            <label class="block text-[10px] text-slate-400 mb-0.5 font-bold">店舗・スポット名 <span class="text-rose-400">*</span></label>
+                            <input type="text" id="edit-name" value="${spot.name}" class="w-full bg-slate-950 border border-slate-800 focus:border-slate-700 rounded px-2 py-1 text-xs outline-none text-white font-bold">
+                        </div>
+                        
+                        <div class="grid grid-cols-2 gap-1.5">
+                            <div>
+                                <label class="block text-[10px] text-slate-400 mb-0.5 font-bold">大カテゴリ</label>
+                                <select id="edit-category" class="w-full bg-slate-950 border border-slate-800 focus:border-slate-700 rounded px-1 py-1 text-xs outline-none text-slate-300 font-bold" onchange="updateEditSubcategories(this.value)">
+                                    ${categoryOptions}
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-[10px] text-slate-400 mb-0.5 font-bold">小カテゴリ</label>
+                                <select id="edit-subcategory" class="w-full bg-slate-950 border border-slate-800 focus:border-slate-700 rounded px-1 py-1 text-xs outline-none text-slate-300 font-bold">
+                                </select>
+                            </div>
+                        </div>
+
+                        <div>
+                            <label class="block text-[10px] text-slate-400 mb-0.5 font-bold">住所</label>
+                            <input type="text" id="edit-address" value="${spot.address || ''}" class="w-full bg-slate-950 border border-slate-800 focus:border-slate-700 rounded px-2 py-1 text-xs outline-none text-white">
+                        </div>
+
+                        <div class="grid grid-cols-2 gap-1.5">
+                            <div>
+                                <label class="block text-[10px] text-slate-400 mb-0.5 font-bold">固定電話</label>
+                                <input type="text" id="edit-phone-fixed" value="${spot.phone_fixed || ''}" class="w-full bg-slate-950 border border-slate-800 focus:border-slate-700 rounded px-2 py-1 text-xs outline-none text-white">
+                            </div>
+                            <div>
+                                <label class="block text-[10px] text-slate-400 mb-0.5 font-bold">携帯番号</label>
+                                <input type="text" id="edit-phone-mobile" value="${spot.phone_mobile || ''}" class="w-full bg-slate-950 border border-slate-800 focus:border-slate-700 rounded px-2 py-1 text-xs outline-none text-white">
+                            </div>
+                        </div>
+
+                        <div>
+                            <label class="block text-[10px] text-slate-400 mb-0.5 font-bold">営業時間</label>
+                            <input type="text" id="edit-hours" value="${spot.hours || ''}" class="w-full bg-slate-950 border border-slate-800 focus:border-slate-700 rounded px-2 py-1 text-xs outline-none text-white">
+                        </div>
+
+                        <div>
+                            <label class="block text-[10px] text-slate-400 mb-0.5 font-bold">紹介文・備考</label>
+                            <textarea id="edit-desc" rows="2" class="w-full bg-slate-950 border border-slate-800 focus:border-slate-700 rounded px-2 py-1 text-xs outline-none text-white resize-none">${spot.desc || ''}</textarea>
+                        </div>
+                    </div>
+
+                    <div class="flex gap-1.5 mt-1 pt-1.5 border-t border-slate-800">
+                        <button onclick="applyFilterAndSearch()" class="flex-1 bg-slate-800 hover:bg-slate-700 text-slate-300 py-1.5 rounded text-[11px] font-bold transition-all border border-slate-700 cursor-pointer">キャンセル</button>
+                        <button onclick="updateSpotOnServer('${spotId}', ${spot.lat}, ${spot.lng})" class="flex-1 bg-sky-600 hover:bg-sky-500 text-white py-1.5 rounded text-[11px] font-bold transition-all shadow-lg shadow-sky-900/40 cursor-pointer">更新を保存</button>
+                    </div>
+                </div>
+            `;
+
+            marker.bindPopup(editFormHTML, { closeButton: false, closeOnClick: false }).openPopup();
+            
+            window.updateEditSubcategories = function(selectedCat) {
+                const subSelect = document.getElementById('edit-subcategory');
+                if (!subSelect) return;
+                subSelect.innerHTML = '';
+                const filteredSubs = categoriesMaster.filter(item => item.category === selectedCat).map(item => item.subcategory);
+                filteredSubs.forEach(subName => {
+                    const opt = document.createElement('option');
+                    opt.value = subName;
+                    opt.textContent = subName;
+                    if(subName === spot.subcategory) opt.selected = true;
+                    subSelect.appendChild(opt);
+                });
+            };
+            updateEditSubcategories(spot.category);
+        };
+
+        window.updateSpotOnServer = async function(spotId, lat, lng) {
+            const name = document.getElementById('edit-name').value.trim();
+            if (!name) {
+                alert("店舗・スポット名は必須です！");
+                return;
+            }
+
+            const payload = {
+                action: "update", 
+                id: spotId,
+                category: document.getElementById('edit-category').value,
+                subcategory: document.getElementById('edit-subcategory').value,
+                name: name,
+                lat: lat,
+                lng: lng,
+                address: document.getElementById('edit-address').value.trim(),
+                hours: document.getElementById('edit-hours').value.trim(),
+                phone_fixed: document.getElementById('edit-phone-fixed').value.trim(),
+                phone_mobile: document.getElementById('edit-phone-mobile').value.trim(),
+                desc: document.getElementById('edit-desc').value.trim()
+            };
+
+            toggleLoading(true);
+            try {
+                const response = await fetch(GAS_WEB_APP_URL, {
+                    method: 'POST',
+                    body: JSON.stringify(payload)
+                });
+                const result = await response.json();
+                
+                if (result.status === 'success') {
+                    const idx = appState.spots.findIndex(s => String(s.id) === String(spotId));
+                    if (idx !== -1) appState.spots[idx] = payload;
+                    applyFilterAndSearch();
+                } else {
+                    alert("更新エラーが発生しました: " + result.message);
+                }
+            } catch (err) {
+                console.error("更新失敗:", err);
+                alert("通信エラーが発生しました。");
+            } finally {
+                toggleLoading(false);
+            }
+        };
+
+        window.deleteSpotFromServer = async function(spotId) {
+            if (!confirm("⚠️ 本当にこのスポットを完全に削除してもよろしいですか？")) return;
+
+            const payload = {
+                action: "delete", 
+                id: spotId
+            };
+
+            toggleLoading(true);
+            try {
+                const response = await fetch(GAS_WEB_APP_URL, {
+                    method: 'POST',
+                    body: JSON.stringify(payload)
+                });
+                const result = await response.json();
+                
+                if (result.status === 'success') {
+                    appState.spots = appState.spots.filter(s => String(s.id) !== String(spotId));
+                    applyFilterAndSearch();
+                } else {
+                    alert("削除エラーが発生しました: " + result.message);
+                }
+            } catch (err) {
+                console.error("削除失敗:", err);
+                alert("削除通信中にエラーが発生しました。");
+            } finally {
+                toggleLoading(false);
+            }
+        };
+
+        document.getElementById('btn-reset-view').addEventListener('click', () => {
+            map.flyTo(MAP_DEFAULT_CENTER, MAP_DEFAULT_ZOOM, { duration: 1.2 });
+        });
+
+        const sidebarEl = document.getElementById('sidebar');
+        const sidebarIconEl = document.getElementById('sidebar-icon');
+
+        function setSidebarState(open) {
+            appState.sidebarOpen = open;
+            const currentCenter = map.getCenter();
+            
+            if (open) {
+                sidebarEl.style.marginLeft = '0px';
+                sidebarIconEl.textContent = 'menu_open';
+            } else {
+                sidebarEl.style.marginLeft = '-320px';
+                sidebarIconEl.textContent = 'menu';
+            }
+            
+            let startTime = performance.now();
+            function animateMap() {
+                map.invalidateSize({ animate: false });
+                map.setView(currentCenter, map.getZoom(), { animate: false });
+                
+                let elapsed = performance.now() - startTime;
+                if (elapsed < 350) requestAnimationFrame(animateMap);
+            }
+            requestAnimationFrame(animateMap);
+        }
+
+        document.getElementById('toggle-sidebar').addEventListener('click', () => {
+            setSidebarState(!appState.sidebarOpen);
+        });
+
+
+        document.getElementById('search-input').addEventListener('input', (e) => {
+            appState.searchQuery = e.target.value;
+            applyFilterAndSearch();
+        });
+
+        const infoModal = document.getElementById('info-modal');
+        document.getElementById('btn-info').addEventListener('click', () => {
+            infoModal.classList.remove('hidden');
+            infoModal.classList.add('flex');
+            setTimeout(() => {
+                infoModal.classList.remove('opacity-0');
+                infoModal.classList.add('opacity-100');
+            }, 10);
+        });
+
+        function closeInfoModal() {
+            infoModal.classList.remove('opacity-100');
+            infoModal.classList.add('opacity-0');
+            setTimeout(() => {
+                infoModal.classList.remove('flex');
+                infoModal.classList.add('hidden');
+            }, 300);
+        }
+        document.getElementById('close-info').addEventListener('click', closeInfoModal);
+        infoModal.addEventListener('click', (e) => {
+            if (e.target === infoModal) closeInfoModal();
+        });
+
+        window.addEventListener('resize', () => {
+            if (window.innerWidth < 768) setSidebarState(false);
+            else setSidebarState(true);
+        });
+
+        window.onload = async function() {
+            if (window.innerWidth < 768) setSidebarState(false);
+            else setSidebarState(true);
+            
+            await loadCategoryMaster();     
+            await loadDataFromSpreadsheet(); 
+        };
+    </script>
+</body>
+</html>
