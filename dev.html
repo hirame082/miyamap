@@ -447,7 +447,7 @@
             }
 
             displaySpots.forEach(spot => {
-                const config = getCategoryConfig(category);
+                const config = getCategoryConfig(spot.category);
                 const subLabel = spot.subcategory ? ` · ${spot.subcategory}` : "";
 
                 const card = document.createElement('div');
