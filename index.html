@@ -314,7 +314,8 @@
             try {
                 const response = await fetch(GAS_WEB_APP_URL);
                 const rawData = await response.json();
-                const incomingSpots = rawData.spots || [];
+                // rawData自体が配列か、それともオブジェクトのspotsに入っているか両対応にする
+                const incomingSpots = Array.isArray(rawData) ? rawData : (rawData.spots || []);
 
                 appState.spots = incomingSpots.map(item => {
                     const phoneNumber = String(item.phone_fixed || "").trim() || String(item.phone_mobile || "").trim();
