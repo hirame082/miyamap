@@ -2,13 +2,13 @@
     {
     "category": "グルメ",
     "subcategory": "居酒屋",
-    "icon_path": "image/key.png",
+    "icon_path": "image/izakaya.png",
     "color": "#ef4444"
   }, 
   {
     "category": "グルメ",
     "subcategory": "ラーメン",
-    "icon_path": "image/key.png",
+    "icon_path": "image/ramen.png",
     "color": "#ef4444"
   },
   {
@@ -39,13 +39,13 @@
     "category": "グルメ",
     "subcategory": "カフェ",
     "icon_path": "image/key.png",
-    "color": "#ef4444"
+    "color": "#78350f"
   },
   {
     "category": "グルメ",
     "subcategory": "スイーツ",
     "icon_path": "image/key.png",
-    "color": "#ef4444"
+    "color": "#ec4899"
   },
   {
     "category": "買い物",
@@ -63,61 +63,61 @@
     "category": "買い物",
     "subcategory": "アパレル/雑貨",
     "icon_path": "image/key.png",
-    "color": "#ef4444"
+    "color": "#3b82f6"
   },
   {
     "category": "買い物",
     "subcategory": "その他/特産品",
     "icon_path": "image/key.png",
-    "color": "#ef4444"
+    "color": "#3b82f6"
   }, 
   {
     "category": "アクティビティ",
     "subcategory": "スポーツ施設",
     "icon_path": "image/key.png",
-    "color": "#ef4444"
+    "color": "#f59e0b"
   }, 
   {
     "category": "アクティビティ",
     "subcategory": "体験施設",
     "icon_path": "image/key.png",
-    "color": "#ef4444"
+    "color": "#f59e0b"
   }, 
   {
     "category": "福祉",
     "subcategory": "介護施設",
     "icon_path": "image/key.png",
-    "color": "#ef4444"
+    "color": "#10b981"
   },  
   {
     "category": "福祉",
     "subcategory": "就労A/B",
     "icon_path": "image/key.png",
-    "color": "#ef4444"
+    "color": "#10b981"
   },  
   {
     "category": "医療/ヘルスケア",
     "subcategory": "クリニック",
     "icon_path": "image/key.png",
-    "color": "#ef4444"
+    "color": "#10b981"
   }, 
   {
     "category": "施設",
     "subcategory": "公園",
     "icon_path": "image/key.png",
-    "color": "#ef4444"
+    "color": "#10b981"
   }, 
   {
     "category": "施設",
     "subcategory": "公共施設",
     "icon_path": "image/key.png",
-    "color": "#ef4444"
+    "color": "#10b981"
   },
     {
     "category": "観光・レジャー",
     "subcategory": "観光/散策",
     "icon_path": "image/key.png",
-    "color": "#ef4444"
+    "color": "#10b981"
   },  
   {
     "category": "観光・レジャー",
