@@ -342,24 +342,11 @@
             if (iconUrl) {
                 return L.icon({
                     iconUrl: iconUrl,
-                    iconSize: [28, 28],       // アイコンの表示サイズ
+                    iconSize: [56, 56],       // アイコンの表示サイズ
                     iconAnchor: [14, 28],     // ピンの設置先端（中心下部）
                     popupAnchor: [0, -28]     // ポップアップの出現位置
                 });
             }
-
-            // 画像URLが無い場合のフォールバック（従来のDivIcon形状）
-            const color = config ? config.color : '#8b5cf6';
-            return L.divIcon({
-                html: `
-                    <div class="flex items-center justify-center w-[17px] h-[17px] rounded-full border border-slate-700 shadow-lg text-white" style="background-color: ${color};">
-                        <span class="material-icons" style="font-size: 9px;">place</span>
-                    </div>
-                `,
-                className: 'custom-div-icon',
-                iconSize: [17, 17],
-                iconAnchor: [8, 8]
-            });
         }
 
         function buildPopupHTML(spot) {
