@@ -1,36 +1,80 @@
 // ==========================================
-// js/dev.js - 管理画面専用スクリプト
+// js/dev.js - 管理者画面専用スクリプト（完全版）
 // ==========================================
 
 let map;
+let categoriesMaster = [];
 let appState = {
     spots: [],
     sidebarOpen: true,
-    activeCategories: [''],
+    activeCategories: [],
     searchQuery: '',
-    editMode: false
+    isAddingMode: false,
+    editingSpotId: null
 };
+
 const activeMarkers = new Map();
-let tempMarker = null;
+let currentMarker = null; // 新規追加・編集時にマップ上に置く一時マーカー
 
 window.onload = async function() {
+    // 1. マップの初期化（common.js）
     map = initBaseMap();
 
+    // 画面サイズに応じたサイドバーの初期状態設定
     if (window.innerWidth < 768) setSidebarState(false);
     else setSidebarState(true);
 
-    await loadCategoryMaster();
-    
+    // 2. カテゴリマスタの取得とフィルター・フォーム初期化
+    categoriesMaster = await loadCategoryMaster();
     const uniqueCategories = [...new Set(categoriesMaster.map(item => item.category))];
-    appState.activeCategories = uniqueCategories;
+    appState.activeCategories = [...uniqueCategories];
+    
     buildCategoryFilter();
+    initFormCategoryDropdowns();
 
+    // 3. スプレッドシートからスポットデータ取得と描画
     appState.spots = await loadDataFromSpreadsheet();
     applyFilterAndSearch();
 
+    // 4. イベントリスナーの登録
     setupEventListeners();
 };
 
+// フォーム内の「大カテゴリ」ドロップダウンを初期化
+function initFormCategoryDropdowns() {
+    const catSelect = document.getElementById('edit-category');
+    if (!catSelect) return;
+
+    catSelect.innerHTML = '<option value="">選択してください</option>';
+    const uniqueCategories = [...new Set(categoriesMaster.map(item => item.category))];
+
+    uniqueCategories.forEach(cat => {
+        const opt = document.createElement('option');
+        opt.value = cat;
+        opt.textContent = cat;
+        catSelect.appendChild(opt);
+    });
+}
+
+// 選択された大カテゴリに応じて「サブカテゴリ」ドロップダウンを更新
+function updateSubcategoryDropdown(selectedCategory, selectedSubcategory = '') {
+    const subCatSelect = document.getElementById('edit-subcategory');
+    if (!subCatSelect) return;
+
+    subCatSelect.innerHTML = '<option value="">なし</option>';
+    if (!selectedCategory) return;
+
+    const filtered = categoriesMaster.filter(item => item.category === selectedCategory && item.subcategory);
+    filtered.forEach(item => {
+        const opt = document.createElement('option');
+        opt.value = item.subcategory;
+        opt.textContent = item.subcategory;
+        if (item.subcategory === selectedSubcategory) opt.selected = true;
+        subCatSelect.appendChild(opt);
+    });
+}
+
+// カテゴリフィルター（アコーディオン内チェックボックス）生成
 function buildCategoryFilter() {
     const container = document.getElementById("filter-checkboxes-container");
     if (!container) return;
@@ -39,7 +83,7 @@ function buildCategoryFilter() {
     const uniqueCategories = [...new Set(categoriesMaster.map(item => item.category))];
 
     uniqueCategories.forEach(category => {
-        const config = getCategoryConfig(category);
+        const config = categoriesMaster.find(item => item.category === category) || { color: "#8b5cf6" };
         const label = document.createElement("label");
         label.className = "flex items-center gap-2 cursor-pointer text-slate-300 hover:text-white text-xs py-0.5 select-none";
         label.innerHTML = `
@@ -63,46 +107,49 @@ function buildCategoryFilter() {
     });
 }
 
+// 管理者用ポップアップHTML構築
 function buildPopupHTML(spot) {
-    const config = getCategoryConfig(spot.category);
+    const config = categoriesMaster.find(item => item.category === spot.category && item.subcategory === spot.subcategory) 
+                || categoriesMaster.find(item => item.category === spot.category) 
+                || { color: "#8b5cf6" };
+    
     const subLabel = spot.subcategory ? ` · ${spot.subcategory}` : "";
     
     let html = `
-        <div class="p-1 text-slate-200 flex flex-col gap-2 min-w-[250px] leading-relaxed select-text text-xs">
+        <div class="p-1 text-slate-200 flex flex-col gap-2 min-w-[240px] leading-relaxed select-text text-xs">
             <div class="border-b border-slate-700 pb-1.5">
                 <h4 class="font-bold text-sm text-white break-all">${spot.name}</h4>
-                <span class="text-[9px] px-2 py-0.5 mt-1 inline-block rounded-full border font-bold tracking-wider text-white" style="background-color: ${config.color}20; border-color: ${config.color}50; color: ${config.color};">
+                <span class="text-[9px] px-2 py-0.5 mt-1 inline-block rounded-full border font-bold tracking-wider" style="background-color: ${config.color}20; border-color: ${config.color}50; color: ${config.color};">
                     ${spot.category}${subLabel}
                 </span>
             </div>
     `;
+    
     if (spot.address) html += `<div class="flex items-start gap-1.5 text-slate-300"><span class="material-icons text-slate-400 shrink-0" style="font-size:13px; margin-top:2px;">place</span><span class="break-all">${spot.address}</span></div>`;
     if (spot.hours) html += `<div class="flex items-start gap-1.5 text-slate-300"><span class="material-icons text-slate-400 shrink-0" style="font-size:13px; margin-top:2px;">schedule</span><span class="break-all">${spot.hours}</span></div>`;
     if (spot.phone_fixed || spot.phone_mobile) {
         const tel = spot.phone_fixed || spot.phone_mobile;
-        html += `<div class="flex items-center gap-1.5 text-slate-300"><span class="material-icons text-slate-400 shrink-0" style="font-size:13px;">phone</span><span class="break-all">${tel}</span></div>`;
+        html += `<div class="flex items-center gap-1.5 text-slate-300"><span class="material-icons text-slate-400 shrink-0" style="font-size:13px;">phone</span><a href="tel:${tel}" class="break-all text-sky-400 hover:underline">${tel}</a></div>`;
     }
     if (spot.desc) html += `<p class="text-slate-400 mt-1 pt-1.5 border-t border-slate-800/60 italic break-all text-[11px]">${spot.desc}</p>`;
     
     html += `
         <div class="flex gap-2 mt-2 pt-2 border-t border-slate-800">
-            <button onclick="openEditForm('${spot.id}')" class="flex-1 bg-slate-800 hover:bg-slate-700 text-slate-200 py-1 rounded text-[10px] font-bold transition-all border border-slate-700 flex items-center justify-center gap-0.5 cursor-pointer">
-                <span class="material-icons" style="font-size:11px;">edit</span>編集
-            </button>
-            <button onclick="deleteSpotFromServer('${spot.id}')" class="flex-1 bg-rose-950/40 hover:bg-rose-900/60 text-rose-400 py-1 rounded text-[10px] font-bold transition-all border border-rose-900/50 flex items-center justify-center gap-0.5 cursor-pointer">
-                <span class="material-icons" style="font-size:11px;">delete</span>削除
-            </button>
+            <button onclick="openEditModal('${spot.id}')" class="flex-1 bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/40 py-1 rounded text-xs font-bold transition-all">編集</button>
+            <button onclick="deleteSpot('${spot.id}')" class="flex-1 bg-rose-500/20 hover:bg-rose-500/30 text-rose-300 border border-rose-500/40 py-1 rounded text-xs font-bold transition-all">削除</button>
         </div>
     </div>`;
+    
     return html;
 }
 
+// スポットのマーカー描画（大カテゴリ＋サブカテゴリで正しいピンを表示）
 function renderSpotOnMap(spot) {
     const lat = Number(spot.lat);
     const lng = Number(spot.lng);
     if (!lat || !lng) return;
 
-    const marker = L.marker([lat, lng], { icon: createCustomIcon(spot.category) });
+    const marker = L.marker([lat, lng], { icon: createCustomIcon(spot.category, spot.subcategory, categoriesMaster) });
     marker.bindPopup(buildPopupHTML(spot), { maxWidth: 280, closeButton: false });
     
     marker.on('mouseover', function () {
@@ -113,6 +160,7 @@ function renderSpotOnMap(spot) {
     activeMarkers.set(spot.id, marker);
 }
 
+// 絞り込み＆検索の適用
 function applyFilterAndSearch() {
     activeMarkers.forEach(marker => map.removeLayer(marker));
     activeMarkers.clear();
@@ -133,6 +181,7 @@ function applyFilterAndSearch() {
     updateSpotListUI(filtered);
 }
 
+// サイドバーリスト更新
 function updateSpotListUI(displaySpots) {
     const listContainer = document.getElementById('spot-list');
     const counter = document.getElementById('list-counter');
@@ -147,7 +196,9 @@ function updateSpotListUI(displaySpots) {
     }
 
     displaySpots.forEach(spot => {
-        const config = getCategoryConfig(spot.category);
+        const config = categoriesMaster.find(item => item.category === spot.category && item.subcategory === spot.subcategory) 
+                    || categoriesMaster.find(item => item.category === spot.category) 
+                    || { color: "#8b5cf6" };
         const subLabel = spot.subcategory ? ` · ${spot.subcategory}` : "";
 
         const card = document.createElement('div');
@@ -155,12 +206,11 @@ function updateSpotListUI(displaySpots) {
         
         let detailsHTML = '';
         if (spot.address) detailsHTML += `<div class="text-[11px] text-slate-400 flex items-start gap-1"><span class="material-icons text-slate-500 shrink-0" style="font-size:11px; margin-top:1px;">place</span><span class="truncate">${spot.address}</span></div>`;
-        if (spot.desc) detailsHTML += `<p class="text-[11px] text-slate-400 mt-0.5 line-clamp-2 italic break-all border-t border-slate-800/60 pt-1">${spot.desc}</p>`;
 
         card.innerHTML = `
             <div class="flex justify-between items-start gap-2">
                 <h4 class="font-bold text-xs truncate text-white max-w-[145px]">${spot.name}</h4>
-                <span class="text-[8px] px-1.5 py-0.5 rounded-full border font-bold shrink-0 text-white" style="background-color: ${config.color}20; border-color: ${config.color}50; color: ${config.color};">${spot.category}${subLabel}</span>
+                <span class="text-[8px] px-1.5 py-0.5 rounded-full border font-bold shrink-0" style="background-color: ${config.color}20; border-color: ${config.color}50; color: ${config.color};">${spot.category}${subLabel}</span>
             </div>
             ${detailsHTML}
         `;
@@ -175,163 +225,240 @@ function updateSpotListUI(displaySpots) {
     });
 }
 
-function setupEventListeners() {
-    const modeViewBtn = document.getElementById('mode-view');
-    const modeEditBtn = document.getElementById('mode-edit');
+// 編集モーダル・新規モーダル内のピンアイコンをリアルタイムで変更する処理
+function updateEditingMarkerIcon() {
+    const cat = document.getElementById('edit-category').value;
+    const subCat = document.getElementById('edit-subcategory').value;
 
-    function setMode(isEdit) {
-        appState.editMode = isEdit;
-        cancelRegistration(); 
-
-        if (isEdit) {
-            modeEditBtn.className = "flex-1 py-1.5 text-xs font-bold rounded-lg transition-all flex items-center justify-center gap-1 bg-amber-600 text-white cursor-pointer";
-            modeViewBtn.className = "flex-1 py-1.5 text-xs font-bold rounded-lg transition-all flex items-center justify-center gap-1 text-slate-400 hover:text-slate-200 cursor-pointer";
-        } else {
-            modeViewBtn.className = "flex-1 py-1.5 text-xs font-bold rounded-lg transition-all flex items-center justify-center gap-1 bg-emerald-600 text-white cursor-pointer";
-            modeEditBtn.className = "flex-1 py-1.5 text-xs font-bold rounded-lg transition-all flex items-center justify-center gap-1 text-slate-400 hover:text-slate-200 cursor-pointer";
+    if (currentMarker && cat) {
+        const newIcon = createCustomIcon(cat, subCat, categoriesMaster);
+        if (newIcon) {
+            currentMarker.setIcon(newIcon);
         }
     }
+}
 
-    if (modeViewBtn) modeViewBtn.addEventListener('click', () => setMode(false));
-    if (modeEditBtn) modeEditBtn.addEventListener('click', () => setMode(true));
+// イベント設定
+function setupEventListeners() {
+    // 1. マップクリック時（スポット追加モード時）
+    map.on('click', (e) => {
+        if (!appState.isAddingMode) return;
 
-    map.on('click', function(e) {
-        if (!appState.editMode) return; 
-
-        const clickLatLng = e.latlng;
-        if (!isInsideMiyama(clickLatLng)) {
-            alert("❌ エラー: みやま市の管轄範囲外にピンを配置することはできません。");
+        if (!isInsideMiyama(e.latlng)) {
+            alert('みやま市の境界外にはピンを配置できません。');
             return;
         }
 
-        if (tempMarker) map.removeLayer(tempMarker);
-
-        const defaultCat = categoriesMaster[0] ? categoriesMaster[0].category : '';
-        tempMarker = L.marker(clickLatLng, { icon: createCustomIcon(defaultCat) }).addTo(map);
-
-        const uniqueCategories = [...new Set(categoriesMaster.map(item => item.category))];
-        let categoryOptions = uniqueCategories.map(cat => `<option value="${cat}">${cat}</option>`).join('');
-        
-        let formHTML = `
-            <div class="p-1 text-slate-200 flex flex-col gap-2 min-w-[260px] text-xs font-sans">
-                <div class="border-b border-slate-700 pb-1.5 flex justify-between items-center">
-                    <h4 class="font-bold text-white text-sm flex items-center gap-1"><span class="material-icons text-amber-400 text-base">add_location_alt</span>新規スポット登録</h4>
-                </div>
-                
-                <div class="flex flex-col gap-2 max-h-[320px] overflow-y-auto pr-1">
-                    <div>
-                        <label class="block text-[10px] text-slate-400 mb-0.5 font-bold">店舗・スポット名 <span class="text-rose-400">*</span></label>
-                        <input type="text" id="form-name" class="w-full bg-slate-950 border border-slate-800 focus:border-slate-700 rounded px-2 py-1 text-xs outline-none text-white font-bold" placeholder="みやま商店">
-                    </div>
-                    
-                    <div class="grid grid-cols-2 gap-1.5">
-                        <div>
-                            <label class="block text-[10px] text-slate-400 mb-0.5 font-bold">大カテゴリ</label>
-                            <select id="form-category" class="w-full bg-slate-950 border border-slate-800 focus:border-slate-700 rounded px-1 py-1 text-xs outline-none text-slate-300 font-bold" onchange="updateFormSubcategories(this.value)">
-                                <option value="">選択してください</option>
-                                ${categoryOptions}
-                            </select>
-                        </div>
-                        <div>
-                            <label class="block text-[10px] text-slate-400 mb-0.5 font-bold">小カテゴリ</label>
-                            <select id="form-subcategory" class="w-full bg-slate-950 border border-slate-800 focus:border-slate-700 rounded px-1 py-1 text-xs outline-none text-slate-300 font-bold">
-                                <option value="">先に対カテゴリを選択</option>
-                            </select>
-                        </div>
-                    </div>
-
-                    <div>
-                        <label class="block text-[10px] text-slate-400 mb-0.5 font-bold">住所</label>
-                        <input type="text" id="form-address" class="w-full bg-slate-950 border border-slate-800 focus:border-slate-700 rounded px-2 py-1 text-xs outline-none text-white" placeholder="みやま市瀬高町...">
-                    </div>
-
-                    <div class="grid grid-cols-2 gap-1.5">
-                        <div>
-                            <label class="block text-[10px] text-slate-400 mb-0.5 font-bold">固定電話</label>
-                            <input type="text" id="form-phone-fixed" class="w-full bg-slate-950 border border-slate-800 focus:border-slate-700 rounded px-2 py-1 text-xs outline-none text-white" placeholder="0944-XX-XXXX">
-                        </div>
-                        <div>
-                            <label class="block text-[10px] text-slate-400 mb-0.5 font-bold">携帯番号</label>
-                            <input type="text" id="form-phone-mobile" class="w-full bg-slate-950 border border-slate-800 focus:border-slate-700 rounded px-2 py-1 text-xs outline-none text-white" placeholder="090-XXXX-XXXX">
-                        </div>
-                    </div>
-
-                    <div>
-                        <label class="block text-[10px] text-slate-400 mb-0.5 font-bold">営業時間</label>
-                        <input type="text" id="form-hours" class="w-full bg-slate-950 border border-slate-800 focus:border-slate-700 rounded px-2 py-1 text-xs outline-none text-white" placeholder="11:00〜20:00 (水曜定休)">
-                    </div>
-
-                    <div>
-                        <label class="block text-[10px] text-slate-400 mb-0.5 font-bold">紹介文・備考</label>
-                        <textarea id="form-desc" rows="2" class="w-full bg-slate-950 border border-slate-800 focus:border-slate-700 rounded px-2 py-1 text-xs outline-none text-white resize-none" placeholder="地元で愛される老舗店です。"></textarea>
-                    </div>
-                </div>
-
-                <div class="flex gap-1.5 mt-1 pt-1.5 border-t border-slate-800">
-                    <button onclick="cancelRegistration()" class="flex-1 bg-slate-800 hover:bg-slate-700 text-slate-300 py-1.5 rounded text-[11px] font-bold transition-all border border-slate-700 cursor-pointer">キャンセル</button>
-                    <button onclick="submitToSpreadsheet(${clickLatLng.lat}, ${clickLatLng.lng})" class="flex-1 bg-emerald-600 hover:bg-emerald-500 text-white py-1.5 rounded text-[11px] font-bold transition-all shadow-lg shadow-emerald-900/40 cursor-pointer">保存する</button>
-                </div>
-            </div>
-        `;
-
-        tempMarker.bindPopup(formHTML, { closeButton: false, closeOnClick: false }).openPopup();
-
-        setTimeout(() => {
-            const selectEl = document.getElementById('form-category');
-            if(selectEl) {
-                selectEl.addEventListener('change', (ev) => {
-                    if(ev.target.value && tempMarker) {
-                        tempMarker.setIcon(createCustomIcon(ev.target.value));
-                    }
-                });
-            }
-        }, 50);
+        openAddModal(e.latlng.lat, e.latlng.lng);
     });
 
+    // 2. モード切替（閲覧 ↔ スポット追加）
+    const btnToggleAdd = document.getElementById('btn-toggle-add');
+    if (btnToggleAdd) {
+        btnToggleAdd.addEventListener('click', () => {
+            appState.isAddingMode = !appState.isAddingMode;
+            const mapEl = document.getElementById('map');
+
+            if (appState.isAddingMode) {
+                btnToggleAdd.classList.remove('bg-emerald-600', 'hover:bg-emerald-500');
+                btnToggleAdd.classList.add('bg-rose-600', 'hover:bg-rose-500');
+                btnToggleAdd.innerHTML = `<span class="material-icons text-sm">close</span><span>追加をキャンセル</span>`;
+                mapEl.classList.add('edit-active-cursor');
+            } else {
+                btnToggleAdd.classList.remove('bg-rose-600', 'hover:bg-rose-500');
+                btnToggleAdd.classList.add('bg-emerald-600', 'hover:bg-emerald-500');
+                btnToggleAdd.innerHTML = `<span class="material-icons text-sm">add_location_alt</span><span>スポットを追加</span>`;
+                mapEl.classList.remove('edit-active-cursor');
+                if (currentMarker && !appState.editingSpotId) {
+                    map.removeLayer(currentMarker);
+                    currentMarker = null;
+                }
+            }
+        });
+    }
+
+    // 3. 大カテゴリ変更時（サブカテゴリリスト更新 ＆ アイコン即時変更）
+    document.getElementById('edit-category').addEventListener('change', function() {
+        updateSubcategoryDropdown(this.value);
+        updateEditingMarkerIcon();
+    });
+
+    // 4. サブカテゴリ変更時（アイコン即時変更）
+    document.getElementById('edit-subcategory').addEventListener('change', function() {
+        updateEditingMarkerIcon();
+    });
+
+    // 5. フォーム保存
+    const spotForm = document.getElementById('spot-form');
+    if (spotForm) {
+        spotForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            await saveSpotData();
+        });
+    }
+
+    // 6. モーダルキャンセル
+    document.getElementById('btn-cancel-modal').addEventListener('click', closeModal);
+
+    // 7. リセットボタン
     document.getElementById('btn-reset-view').addEventListener('click', () => {
         map.flyTo(MAP_DEFAULT_CENTER, MAP_DEFAULT_ZOOM, { duration: 1.2 });
     });
 
+    // 8. サイドバートグル
     document.getElementById('toggle-sidebar').addEventListener('click', () => {
         setSidebarState(!appState.sidebarOpen);
     });
 
+    // 9. 検索入力
     document.getElementById('search-input').addEventListener('input', (e) => {
         appState.searchQuery = e.target.value;
         applyFilterAndSearch();
     });
 
-    const infoModal = document.getElementById('info-modal');
-    document.getElementById('btn-info').addEventListener('click', () => {
-        infoModal.classList.remove('hidden');
-        infoModal.classList.add('flex');
-        setTimeout(() => {
-            infoModal.classList.remove('opacity-0');
-            infoModal.classList.add('opacity-100');
-        }, 10);
-    });
-
-    document.getElementById('close-info').addEventListener('click', closeInfoModal);
-    infoModal.addEventListener('click', (e) => {
-        if (e.target === infoModal) closeInfoModal();
-    });
-
+    // リサイズ対応
     window.addEventListener('resize', () => {
         if (window.innerWidth < 768) setSidebarState(false);
         else setSidebarState(true);
     });
 }
 
-function closeInfoModal() {
-    const infoModal = document.getElementById('info-modal');
-    infoModal.classList.remove('opacity-100');
-    infoModal.classList.add('opacity-0');
-    setTimeout(() => {
-        infoModal.classList.remove('flex');
-        infoModal.classList.add('hidden');
-    }, 300);
+// 新規追加モーダルを開く
+function openAddModal(lat, lng) {
+    appState.editingSpotId = null;
+    document.getElementById('modal-title').textContent = '新規スポット追加';
+    document.getElementById('spot-form').reset();
+    
+    document.getElementById('edit-lat').value = lat;
+    document.getElementById('edit-lng').value = lng;
+    
+    updateSubcategoryDropdown('');
+
+    // 仮ピンの配置
+    if (currentMarker) map.removeLayer(currentMarker);
+    currentMarker = L.marker([lat, lng]).addTo(map);
+
+    const modal = document.getElementById('spot-modal');
+    modal.classList.remove('hidden');
+    modal.classList.add('flex');
 }
 
+// 編集モーダルを開く
+window.openEditModal = function(spotId) {
+    const spot = appState.spots.find(s => String(s.id) === String(spotId));
+    if (!spot) return;
+
+    appState.editingSpotId = spot.id;
+    document.getElementById('modal-title').textContent = 'スポット編集';
+
+    document.getElementById('edit-id').value = spot.id;
+    document.getElementById('edit-name').value = spot.name || '';
+    document.getElementById('edit-category').value = spot.category || '';
+    
+    updateSubcategoryDropdown(spot.category, spot.subcategory);
+    
+    document.getElementById('edit-address').value = spot.address || '';
+    document.getElementById('edit-hours').value = spot.hours || '';
+    document.getElementById('edit-phone-fixed').value = spot.phone_fixed || '';
+    document.getElementById('edit-phone-mobile').value = spot.phone_mobile || '';
+    document.getElementById('edit-desc').value = spot.desc || '';
+    document.getElementById('edit-lat').value = spot.lat;
+    document.getElementById('edit-lng').value = spot.lng;
+
+    // 既存のピンを保持
+    if (currentMarker && !appState.spots.some(s => s.id === currentMarker.options.spotId)) {
+        map.removeLayer(currentMarker);
+    }
+    currentMarker = activeMarkers.get(spot.id);
+
+    const modal = document.getElementById('spot-modal');
+    modal.classList.remove('hidden');
+    modal.classList.add('flex');
+};
+
+// スポット保存処理（GAS連携）
+async function saveSpotData() {
+    const formData = {
+        action: appState.editingSpotId ? 'update' : 'create',
+        id: appState.editingSpotId || Date.now().toString(),
+        name: document.getElementById('edit-name').value,
+        category: document.getElementById('edit-category').value,
+        subcategory: document.getElementById('edit-subcategory').value,
+        address: document.getElementById('edit-address').value,
+        hours: document.getElementById('edit-hours').value,
+        phone_fixed: document.getElementById('edit-phone-fixed').value,
+        phone_mobile: document.getElementById('edit-phone-mobile').value,
+        desc: document.getElementById('edit-desc').value,
+        lat: document.getElementById('edit-lat').value,
+        lng: document.getElementById('edit-lng').value
+    };
+
+    closeModal();
+    toggleLoading(true);
+
+    try {
+        const response = await fetch(GAS_WEB_APP_URL, {
+            method: 'POST',
+            body: JSON.stringify(formData)
+        });
+
+        const result = await response.json();
+        if (result.status === 'success') {
+            appState.spots = await loadDataFromSpreadsheet();
+            applyFilterAndSearch();
+            
+            if (appState.isAddingMode) {
+                document.getElementById('btn-toggle-add').click();
+            }
+        } else {
+            alert('保存に失敗しました: ' + (result.message || '不明なエラー'));
+        }
+    } catch (e) {
+        console.error('保存エラー:', e);
+        alert('保存中にエラーが発生しました。');
+    } finally {
+        toggleLoading(false);
+    }
+}
+
+// スポット削除処理
+window.deleteSpot = async function(spotId) {
+    if (!confirm('このスポットを削除してもよろしいですか？')) return;
+
+    toggleLoading(true);
+    try {
+        const response = await fetch(GAS_WEB_APP_URL, {
+            method: 'POST',
+            body: JSON.stringify({ action: 'delete', id: spotId })
+        });
+
+        const result = await response.json();
+        if (result.status === 'success') {
+            appState.spots = await loadDataFromSpreadsheet();
+            applyFilterAndSearch();
+        } else {
+            alert('削除に失敗しました。');
+        }
+    } catch (e) {
+        console.error('削除エラー:', e);
+        alert('削除処理中にエラーが発生しました。');
+    } finally {
+        toggleLoading(false);
+    }
+};
+
+// モーダルを閉じる
+function closeModal() {
+    const modal = document.getElementById('spot-modal');
+    if (modal) {
+        modal.classList.remove('flex');
+        modal.classList.add('hidden');
+    }
+    appState.editingSpotId = null;
+    currentMarker = null;
+}
+
+// サイドバー開閉 animation
 function setSidebarState(open) {
     appState.sidebarOpen = open;
     const sidebarEl = document.getElementById('sidebar');
@@ -356,247 +483,3 @@ function setSidebarState(open) {
     }
     requestAnimationFrame(animateMap);
 }
-
-// グローバル公開関数（インラインHTMLのonclick属性用）
-window.updateFormSubcategories = function(selectedCat) {
-    const catSelect = document.getElementById('form-category');
-    const subSelect = document.getElementById('form-subcategory');
-    if (!catSelect || !subSelect) return;
-
-    const activeCat = selectedCat || catSelect.value;
-    subSelect.innerHTML = '';
-
-    if (!activeCat) {
-        subSelect.innerHTML = '<option value="">先に対カテゴリを選択</option>';
-        return;
-    }
-
-    const filteredSubs = categoriesMaster.filter(item => item.category === activeCat).map(item => item.subcategory);
-    if (filteredSubs.length === 0) {
-        subSelect.innerHTML = '<option value="その他">その他</option>';
-        return;
-    }
-
-    filteredSubs.forEach(subName => {
-        const opt = document.createElement('option');
-        opt.value = subName;
-        opt.textContent = subName;
-        subSelect.appendChild(opt);
-    });
-};
-
-window.cancelRegistration = function() {
-    if (tempMarker && map) {
-        map.removeLayer(tempMarker);
-        tempMarker = null;
-    }
-};
-
-window.submitToSpreadsheet = async function(lat, lng) {
-    const name = document.getElementById('form-name').value.trim();
-    if (!name) {
-        alert("店舗・スポット名は必須です！");
-        return;
-    }
-
-    const payload = {
-        action: "create", 
-        id: "spot_" + Date.now(),
-        category: document.getElementById('form-category').value,
-        subcategory: document.getElementById('form-subcategory').value,
-        name: name,
-        lat: lat,
-        lng: lng,
-        address: document.getElementById('form-address').value.trim(),
-        hours: document.getElementById('form-hours').value.trim(),
-        phone_fixed: document.getElementById('form-phone-fixed').value.trim(),
-        phone_mobile: document.getElementById('form-phone-mobile').value.trim(),
-        desc: document.getElementById('form-desc').value.trim()
-    };
-
-    toggleLoading(true);
-    try {
-        const response = await fetch(GAS_WEB_APP_URL, {
-            method: 'POST',
-            body: JSON.stringify(payload)
-        });
-        const result = await response.json();
-        
-        if (result.status === 'success') {
-            cancelRegistration();
-            appState.spots.push(payload);
-            applyFilterAndSearch();
-        } else {
-            alert("保存エラーが発生しました: " + result.message);
-        }
-    } catch (err) {
-        console.error("送信失敗:", err);
-        alert("通信エラーが発生しました。");
-    } finally {
-        toggleLoading(false);
-    }
-};
-
-window.openEditForm = function(spotId) {
-    const spot = appState.spots.find(s => String(s.id) === String(spotId));
-    const marker = activeMarkers.get(spotId);
-    if (!spot || !marker) return;
-
-    const uniqueCategories = [...new Set(categoriesMaster.map(item => item.category))];
-    let categoryOptions = uniqueCategories.map(cat => {
-        const selected = cat === spot.category ? 'selected' : '';
-        return `<option value="${cat}" ${selected}>${cat}</option>`;
-    }).join('');
-
-    let editFormHTML = `
-        <div class="p-1 text-slate-200 flex flex-col gap-2 min-w-[260px] text-xs font-sans">
-            <div class="border-b border-slate-700 pb-1.5 flex justify-between items-center">
-                <h4 class="font-bold text-white text-sm flex items-center gap-1"><span class="material-icons text-sky-400 text-base">edit_location</span>スポット情報の編集</h4>
-            </div>
-            
-            <div class="flex flex-col gap-2 max-h-[320px] overflow-y-auto pr-1">
-                <div>
-                    <label class="block text-[10px] text-slate-400 mb-0.5 font-bold">店舗・スポット名 <span class="text-rose-400">*</span></label>
-                    <input type="text" id="edit-name" value="${spot.name}" class="w-full bg-slate-950 border border-slate-800 focus:border-slate-700 rounded px-2 py-1 text-xs outline-none text-white font-bold">
-                </div>
-                
-                <div class="grid grid-cols-2 gap-1.5">
-                    <div>
-                        <label class="block text-[10px] text-slate-400 mb-0.5 font-bold">大カテゴリ</label>
-                        <select id="edit-category" class="w-full bg-slate-950 border border-slate-800 focus:border-slate-700 rounded px-1 py-1 text-xs outline-none text-slate-300 font-bold" onchange="updateEditSubcategories(this.value)">
-                            ${categoryOptions}
-                        </select>
-                    </div>
-                    <div>
-                        <label class="block text-[10px] text-slate-400 mb-0.5 font-bold">小カテゴリ</label>
-                        <select id="edit-subcategory" class="w-full bg-slate-950 border border-slate-800 focus:border-slate-700 rounded px-1 py-1 text-xs outline-none text-slate-300 font-bold">
-                        </select>
-                    </div>
-                </div>
-
-                <div>
-                    <label class="block text-[10px] text-slate-400 mb-0.5 font-bold">住所</label>
-                    <input type="text" id="edit-address" value="${spot.address || ''}" class="w-full bg-slate-950 border border-slate-800 focus:border-slate-700 rounded px-2 py-1 text-xs outline-none text-white">
-                </div>
-
-                <div class="grid grid-cols-2 gap-1.5">
-                    <div>
-                        <label class="block text-[10px] text-slate-400 mb-0.5 font-bold">固定電話</label>
-                        <input type="text" id="edit-phone-fixed" value="${spot.phone_fixed || ''}" class="w-full bg-slate-950 border border-slate-800 focus:border-slate-700 rounded px-2 py-1 text-xs outline-none text-white">
-                    </div>
-                    <div>
-                        <label class="block text-[10px] text-slate-400 mb-0.5 font-bold">携帯番号</label>
-                        <input type="text" id="edit-phone-mobile" value="${spot.phone_mobile || ''}" class="w-full bg-slate-950 border border-slate-800 focus:border-slate-700 rounded px-2 py-1 text-xs outline-none text-white">
-                    </div>
-                </div>
-
-                <div>
-                    <label class="block text-[10px] text-slate-400 mb-0.5 font-bold">営業時間</label>
-                    <input type="text" id="edit-hours" value="${spot.hours || ''}" class="w-full bg-slate-950 border border-slate-800 focus:border-slate-700 rounded px-2 py-1 text-xs outline-none text-white">
-                </div>
-
-                <div>
-                    <label class="block text-[10px] text-slate-400 mb-0.5 font-bold">紹介文・備考</label>
-                    <textarea id="edit-desc" rows="2" class="w-full bg-slate-950 border border-slate-800 focus:border-slate-700 rounded px-2 py-1 text-xs outline-none text-white resize-none">${spot.desc || ''}</textarea>
-                </div>
-            </div>
-
-            <div class="flex gap-1.5 mt-1 pt-1.5 border-t border-slate-800">
-                <button onclick="applyFilterAndSearch()" class="flex-1 bg-slate-800 hover:bg-slate-700 text-slate-300 py-1.5 rounded text-[11px] font-bold transition-all border border-slate-700 cursor-pointer">キャンセル</button>
-                <button onclick="updateSpotOnServer('${spotId}', ${spot.lat}, ${spot.lng})" class="flex-1 bg-sky-600 hover:bg-sky-500 text-white py-1.5 rounded text-[11px] font-bold transition-all shadow-lg shadow-sky-900/40 cursor-pointer">更新を保存</button>
-            </div>
-        </div>
-    `;
-
-    marker.bindPopup(editFormHTML, { closeButton: false, closeOnClick: false }).openPopup();
-    
-    window.updateEditSubcategories = function(selectedCat) {
-        const subSelect = document.getElementById('edit-subcategory');
-        if (!subSelect) return;
-        subSelect.innerHTML = '';
-        const filteredSubs = categoriesMaster.filter(item => item.category === selectedCat).map(item => item.subcategory);
-        filteredSubs.forEach(subName => {
-            const opt = document.createElement('option');
-            opt.value = subName;
-            opt.textContent = subName;
-            if(subName === spot.subcategory) opt.selected = true;
-            subSelect.appendChild(opt);
-        });
-    };
-    updateEditSubcategories(spot.category);
-};
-
-window.updateSpotOnServer = async function(spotId, lat, lng) {
-    const name = document.getElementById('edit-name').value.trim();
-    if (!name) {
-        alert("店舗・スポット名は必須です！");
-        return;
-    }
-
-    const payload = {
-        action: "update", 
-        id: spotId,
-        category: document.getElementById('edit-category').value,
-        subcategory: document.getElementById('edit-subcategory').value,
-        name: name,
-        lat: lat,
-        lng: lng,
-        address: document.getElementById('edit-address').value.trim(),
-        hours: document.getElementById('edit-hours').value.trim(),
-        phone_fixed: document.getElementById('edit-phone-fixed').value.trim(),
-        phone_mobile: document.getElementById('edit-phone-mobile').value.trim(),
-        desc: document.getElementById('edit-desc').value.trim()
-    };
-
-    toggleLoading(true);
-    try {
-        const response = await fetch(GAS_WEB_APP_URL, {
-            method: 'POST',
-            body: JSON.stringify(payload)
-        });
-        const result = await response.json();
-        
-        if (result.status === 'success') {
-            const idx = appState.spots.findIndex(s => String(s.id) === String(spotId));
-            if (idx !== -1) appState.spots[idx] = payload;
-            applyFilterAndSearch();
-        } else {
-            alert("更新エラーが発生しました: " + result.message);
-        }
-    } catch (err) {
-        console.error("更新失敗:", err);
-        alert("通信エラーが発生しました。");
-    } finally {
-        toggleLoading(false);
-    }
-};
-
-window.deleteSpotFromServer = async function(spotId) {
-    if (!confirm("⚠️ 本当にこのスポットを完全に削除してもよろしいですか？")) return;
-
-    const payload = {
-        action: "delete", 
-        id: spotId
-    };
-
-    toggleLoading(true);
-    try {
-        const response = await fetch(GAS_WEB_APP_URL, {
-            method: 'POST',
-            body: JSON.stringify(payload)
-        });
-        const result = await response.json();
-        
-        if (result.status === 'success') {
-            appState.spots = appState.spots.filter(s => String(s.id) !== String(spotId));
-            applyFilterAndSearch();
-        } else {
-            alert("削除エラーが発生しました: " + result.message);
-        }
-    } catch (err) {
-        console.error("削除失敗:", err);
-        alert("削除通信中にエラーが発生しました。");
-    } finally {
-        toggleLoading(false);
-    }
-};

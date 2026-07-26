@@ -1,5 +1,5 @@
 // ==========================================
-// js/common.js - 共通処理・マップ初期化・データ制御
+// js/common.js - 共通処理・データ取得・マップ初期化
 // ==========================================
 
 const GAS_WEB_APP_URL = "https://script.google.com/macros/s/AKfycby6rgf6E5RV2e_awmkQkCzrFt3xjaq2nX1JFp1PcVYgjOcfm9uteTXJvFPRv7GTjh6h/exec";
@@ -29,8 +29,6 @@ const miyamaBorderLatLng = [
 const MAP_DEFAULT_CENTER = [33.127466262080105, 130.49817935838587];
 const MAP_DEFAULT_ZOOM = 14;
 
-let categoriesMaster = [];
-
 // ローディング切り替え
 function toggleLoading(show) {
     const loader = document.getElementById('loading');
@@ -40,7 +38,7 @@ function toggleLoading(show) {
     }
 }
 
-// マップ初期化（BoundaryCanvas＆ぼかし処理のセットアップ）
+// マップ初期化（BoundaryCanvas＆ぼかし処理）
 function initBaseMap() {
     const miyamaGeoJSON = {
         "type": "Feature",
@@ -69,22 +67,17 @@ function initBaseMap() {
     return map;
 }
 
-// カテゴリマスタ読み込み
+// カテゴリマスタ読み込み（そのまま取得して返すだけ）
 async function loadCategoryMaster() {
     try {
         const response = await fetch('./json/category.json?v=' + Date.now());
         if (!response.ok) throw new Error(`JSON取得失敗: ${response.status}`);
-        categoriesMaster = await response.json();
-        return categoriesMaster;
+        return await response.json();
     } catch (e) {
         console.error("🛑 カテゴリJSON参照エラー:", e);
         alert("エラー: category.json が正しく読み込めません。");
-        throw e;
+        return [];
     }
-}
-
-function getCategoryConfig(category) {
-    return categoriesMaster.find(item => item.category === category) || { color: "#8b5cf6", icon_path: null };
 }
 
 // スポットデータ一括取得
@@ -102,10 +95,20 @@ async function loadDataFromSpreadsheet() {
     }
 }
 
-// アイコン生成（フォールバックなし）
-function createCustomIcon(categoryName) {
-    const config = getCategoryConfig(categoryName);
+// アイコン生成（JSONデータからダイレクト参照）
+// アイコン生成（大カテゴリ ＋ サブカテゴリ で一致するものを探す）
+function createCustomIcon(categoryName, subcategoryName, categoriesMaster) {
+    // まず「大カテゴリ」と「サブカテゴリ」が両方一致するものを探す
+    let config = categoriesMaster.find(item => 
+        item.category === categoryName && item.subcategory === subcategoryName
+    );
+    // もし見つからなければ、大カテゴリだけで探す
+    if (!config) {
+        config = categoriesMaster.find(item => item.category === categoryName);
+    }
+
     const iconUrl = config ? (config.icon_path || config.image) : null;
+    
     if (iconUrl) {
         return L.icon({
             iconUrl: iconUrl,
