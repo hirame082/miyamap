@@ -22,7 +22,8 @@ window.onload = async function() {
 
     // 2. カテゴリマスタの取得とフィルターの構築
     categoriesMaster = await loadCategoryMaster();
-    window.categoriesMaster = categoriesMaster;
+    window.categoriesMaster = categoriesMaster; // ← windowオブジェクトにも確実にセット
+
     const uniqueCategories = [...new Set(categoriesMaster.map(item => item.category))];
     appState.activeCategories = [...uniqueCategories];
     buildCategoryFilter();
@@ -107,9 +108,13 @@ function renderSpotOnMap(spot) {
     const lng = Number(spot.lng);
     if (!lat || !lng) return;
 
+    // 大カテゴリ、小カテゴリ、マスタを明示的に渡す
+    const customIcon = createCustomIcon(spot.category, spot.subcategory, categoriesMaster);
+
     const marker = L.marker([lat, lng], { 
-        icon: createCustomIcon(spot.category, spot.subcategory, categoriesMaster) 
+        icon: customIcon 
     });
+    
     marker.bindPopup(buildPopupHTML(spot), { maxWidth: 280, closeButton: false });
     
     marker.on('mouseover', function () {
