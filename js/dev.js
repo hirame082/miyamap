@@ -3,6 +3,7 @@
 // ==========================================
 
 let map;
+let categoriesMaster = []; // グローバル変数定義を追加
 let appState = {
     spots: [],
     sidebarOpen: true,
@@ -19,7 +20,8 @@ window.onload = async function() {
     if (window.innerWidth < 768) setSidebarState(false);
     else setSidebarState(true);
 
-    await loadCategoryMaster();
+    categoriesMaster = await loadCategoryMaster();
+    window.categoriesMaster = categoriesMaster;
     
     const uniqueCategories = [...new Set(categoriesMaster.map(item => item.category))];
     appState.activeCategories = uniqueCategories;
@@ -30,6 +32,10 @@ window.onload = async function() {
 
     setupEventListeners();
 };
+
+function getCategoryConfig(categoryName) {
+    return categoriesMaster.find(item => item.category === categoryName) || { color: "#8b5cf6" };
+}
 
 function buildCategoryFilter() {
     const container = document.getElementById("filter-checkboxes-container");
@@ -102,7 +108,10 @@ function renderSpotOnMap(spot) {
     const lng = Number(spot.lng);
     if (!lat || !lng) return;
 
-    const marker = L.marker([lat, lng], { icon: createCustomIcon(spot.category) });
+    // subcategory と categoriesMaster を引数に追加
+    const marker = L.marker([lat, lng], { 
+        icon: createCustomIcon(spot.category, spot.subcategory, categoriesMaster) 
+    });
     marker.bindPopup(buildPopupHTML(spot), { maxWidth: 280, closeButton: false });
     
     marker.on('mouseover', function () {
@@ -207,7 +216,8 @@ function setupEventListeners() {
         if (tempMarker) map.removeLayer(tempMarker);
 
         const defaultCat = categoriesMaster[0] ? categoriesMaster[0].category : '';
-        tempMarker = L.marker(clickLatLng, { icon: createCustomIcon(defaultCat) }).addTo(map);
+        const defaultSub = categoriesMaster[0] ? categoriesMaster[0].subcategory : '';
+        tempMarker = L.marker(clickLatLng, { icon: createCustomIcon(defaultCat, defaultSub, categoriesMaster) }).addTo(map);
 
         const uniqueCategories = [...new Set(categoriesMaster.map(item => item.category))];
         let categoryOptions = uniqueCategories.map(cat => `<option value="${cat}">${cat}</option>`).join('');
@@ -276,14 +286,26 @@ function setupEventListeners() {
 
         tempMarker.bindPopup(formHTML, { closeButton: false, closeOnClick: false }).openPopup();
 
+        // カテゴリ・小カテゴリ選択時にマーカー画像を動的変更する処理
         setTimeout(() => {
-            const selectEl = document.getElementById('form-category');
-            if(selectEl) {
-                selectEl.addEventListener('change', (ev) => {
-                    if(ev.target.value && tempMarker) {
-                        tempMarker.setIcon(createCustomIcon(ev.target.value));
-                    }
+            const catSelect = document.getElementById('form-category');
+            const subSelect = document.getElementById('form-subcategory');
+            
+            const updateTempIcon = () => {
+                if (tempMarker && catSelect) {
+                    const cat = catSelect.value;
+                    const sub = subSelect ? subSelect.value : null;
+                    tempMarker.setIcon(createCustomIcon(cat, sub, categoriesMaster));
+                }
+            };
+
+            if (catSelect) {
+                catSelect.addEventListener('change', () => {
+                    updateTempIcon();
                 });
+            }
+            if (subSelect) {
+                subSelect.addEventListener('change', updateTempIcon);
             }
         }, 50);
     });
@@ -302,19 +324,21 @@ function setupEventListeners() {
     });
 
     const infoModal = document.getElementById('info-modal');
-    document.getElementById('btn-info').addEventListener('click', () => {
-        infoModal.classList.remove('hidden');
-        infoModal.classList.add('flex');
-        setTimeout(() => {
-            infoModal.classList.remove('opacity-0');
-            infoModal.classList.add('opacity-100');
-        }, 10);
-    });
+    if (document.getElementById('btn-info') && infoModal) {
+        document.getElementById('btn-info').addEventListener('click', () => {
+            infoModal.classList.remove('hidden');
+            infoModal.classList.add('flex');
+            setTimeout(() => {
+                infoModal.classList.remove('opacity-0');
+                infoModal.classList.add('opacity-100');
+            }, 10);
+        });
 
-    document.getElementById('close-info').addEventListener('click', closeInfoModal);
-    infoModal.addEventListener('click', (e) => {
-        if (e.target === infoModal) closeInfoModal();
-    });
+        document.getElementById('close-info').addEventListener('click', closeInfoModal);
+        infoModal.addEventListener('click', (e) => {
+            if (e.target === infoModal) closeInfoModal();
+        });
+    }
 
     window.addEventListener('resize', () => {
         if (window.innerWidth < 768) setSidebarState(false);
@@ -324,6 +348,7 @@ function setupEventListeners() {
 
 function closeInfoModal() {
     const infoModal = document.getElementById('info-modal');
+    if (!infoModal) return;
     infoModal.classList.remove('opacity-100');
     infoModal.classList.add('opacity-0');
     setTimeout(() => {

@@ -95,9 +95,18 @@ async function loadDataFromSpreadsheet() {
     }
 }
 
-// アイコン生成（JSONデータからダイレクト参照）
-function createCustomIcon(categoryName, categoriesMaster) {
-    const config = categoriesMaster.find(item => item.category === categoryName);
+// アイコン生成（大カテゴリ ＋ 小カテゴリの両方に対応）
+function createCustomIcon(categoryName, subcategoryName = null, master = null) {
+    const list = master || window.categoriesMaster || [];
+    
+    // まず「大カテゴリ ＋ 小カテゴリ」で完全一致検索
+    let config = list.find(item => item.category === categoryName && item.subcategory === subcategoryName);
+    
+    // 見つからない場合は「大カテゴリ」のみで検索
+    if (!config) {
+        config = list.find(item => item.category === categoryName);
+    }
+    
     const iconUrl = config ? (config.icon_path || config.image) : null;
     
     if (iconUrl) {
@@ -108,6 +117,8 @@ function createCustomIcon(categoryName, categoriesMaster) {
             popupAnchor: [0, -37]
         });
     }
+    
+    return new L.Icon.Default();
 }
 
 // 境界線内判定（Ray-casting）
