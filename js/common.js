@@ -112,9 +112,9 @@ function createCustomIcon(categoryName, subcategoryName = null, master = null) {
     if (iconUrl) {
         return L.icon({
             iconUrl: iconUrl,
-            iconSize: [40, 40],
-            iconAnchor: [20, 37],
-            popupAnchor: [0, -37]
+            iconSize: [64, 64],
+            iconAnchor: [32, 64],
+            popupAnchor: [0, -64]
         });
     }
     
