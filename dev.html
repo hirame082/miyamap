@@ -3,125 +3,158 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>みやま市スポット管理マップ</title>
-    
-    <!-- Tailwind CSS CDN -->
-    <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Leaflet CSS & JS -->
+    <title>みやま市ローカルマップ (管理・開発用)</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+    <!-- Leaflet CSS -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <!-- Material Icons -->
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
     
-    <!-- カスタムスタイル -->
     <style>
-        /* Leafletの要素重ね順調整 */
-        .leaflet-pane { z-index: 10 !important; }
-        .leaflet-top, .leaflet-bottom { z-index: 20 !important; }
-        /* カスタムピンのアンカー位置調整 */
-        .custom-pin { display: flex; align-items: center; justify-content: center; }
+        html, body {
+            margin: 0; padding: 0; width: 100%; height: 100%;
+            background-color: #0f172a; font-family: sans-serif; overflow: hidden;
+        }
+        #map { width: 100%; height: 100%; background: #0f172a; }
+        .custom-div-icon { background: none; border: none; }
+        
+        .leaflet-popup-content-wrapper {
+            background-color: #0f172a !important;
+            border: 1px solid #334155 !important;
+            border-radius: 12px !important;
+            box-shadow: 0 10px 25px -5px rgb(0 0 0 / 0.5) !important;
+            min-width: 280px !important;
+        }
+        .leaflet-popup-content { margin: 12px !important; width: auto !important; }
+        .leaflet-popup-tip {
+            background-color: #0f172a !important;
+            border-left: 1px solid #334155 !important;
+            border-bottom: 1px solid #334155 !important;
+        }
+
+        .leaflet-bar { border: none !important; box-shadow: none !important; margin: 0 !important; border-radius: 0 !important; }
+        .leaflet-bar a {
+            background-color: #0f172a !important; color: #94a3b8 !important; border: 1px solid #1e293b !important;
+            border-top: none !important; width: 40px !important; height: 40px !important; line-height: 40px !important;
+            font-size: 16px !important; transition: all 0.2s; display: flex !important; align-items: center; justify-content: center;
+        }
+        .leaflet-bar a:hover { background-color: #1e293b !important; color: #ffffff !important; }
+        .leaflet-bar a:last-child { border-bottom-left-radius: 12px !important; border-bottom-right-radius: 12px !important; }
+
+        ::-webkit-scrollbar { width: 5px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #334155; border-radius: 9999px; }
+        ::-webkit-scrollbar-thumb:hover { background: #475569; }
+
+        #loading {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(15, 23, 42, 0.85); z-index: 9999;
+            display: flex; justify-content: center; align-items: center;
+            opacity: 0; pointer-events: none; transition: opacity 0.3s ease;
+        }
+        #loading.active { opacity: 1; pointer-events: auto; }
+        .spinner {
+            width: 40px; height: 40px; border: 4px solid rgba(255,255,255,0.1);
+            border-top-color: #3b82f6; border-radius: 50%; animation: spin 1s linear infinite;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
     </style>
 </head>
-<body class="bg-slate-900 text-slate-100 h-screen w-screen overflow-hidden font-sans flex">
+<body class="relative flex w-full h-full text-slate-200">
 
-    <!-- 左側: サイドバー (操作パネル) -->
-    <aside class="w-80 bg-slate-800 border-r border-slate-700 flex flex-col z-20 shadow-xl">
-        <!-- ヘッダー -->
-        <div class="p-4 border-b border-slate-700 flex items-center justify-between">
-            <h1 class="font-bold text-sm text-slate-100 flex items-center gap-2">
-                <span class="w-2.5 h-2.5 rounded-full bg-blue-500 inline-block"></span>
-                みやま市マップ管理
-            </h1>
-            <a href="index.html" class="text-[11px] text-slate-400 hover:text-slate-200 underline">閲覧画面へ</a>
-        </div>
+    <div id="loading"><div class="spinner"></div></div>
 
-        <!-- 編集モード切替ボタン -->
-        <div class="p-4 border-b border-slate-700">
-            <button id="btn-toggle-mode" class="w-full py-2.5 px-4 bg-slate-700 hover:bg-slate-600 active:scale-95 text-white font-bold text-xs rounded-xl transition-all shadow flex items-center justify-center gap-2">
-                <span class="w-2 h-2 rounded-full bg-slate-400"></span>
-                <span>閲覧モード</span>
-            </button>
-            <p class="text-[10px] text-slate-400 mt-2 text-center">編集モードに切り替えると地図クリックでスポット登録できます</p>
-        </div>
-
-        <!-- カテゴリフィルター一覧 -->
-        <div class="p-4 flex-1 overflow-y-auto space-y-3">
-            <div class="text-xs font-bold text-slate-400 tracking-wider">カテゴリ絞り込み</div>
-            <div id="category-filters" class="space-y-2">
-                <!-- dev.js により動的描画 -->
+    <!-- 左側サイドバーセクション -->
+    <div id="sidebar" class="w-[320px] h-full bg-slate-900/95 backdrop-blur-md border-r border-slate-800 flex flex-col shrink-0 z-[1000] transition-all duration-300 relative">
+        <div class="p-4 border-b border-slate-800 flex flex-col gap-3 bg-slate-950/40">
+            <div class="flex justify-between items-center">
+                <div class="flex items-center gap-2">
+                    <span class="material-icons text-amber-400">construction</span>
+                    <h1 class="font-bold text-sm tracking-wide text-white">みやま市マップ (管理用)</h1>
+                </div>
+                <button id="btn-info" class="text-slate-400 hover:text-emerald-400 transition-colors cursor-pointer">
+                    <span class="material-icons text-xl">info</span>
+                </button>
+            </div>
+            
+            <!-- 閲覧/編集モード切り替えトグル -->
+            <div class="flex bg-slate-950/60 p-1 rounded-xl border border-slate-800">
+                <button id="mode-view" class="flex-1 py-1.5 text-xs font-bold rounded-lg transition-all flex items-center justify-center gap-1 bg-emerald-600 text-white cursor-pointer">
+                    <span class="material-icons text-sm">visibility</span>閲覧中
+                </button>
+                <button id="mode-edit" class="flex-1 py-1.5 text-xs font-bold rounded-lg transition-all flex items-center justify-center gap-1 text-slate-400 hover:text-slate-200 cursor-pointer">
+                    <span class="material-icons text-sm">edit</span>編集する
+                </button>
             </div>
         </div>
-    </aside>
 
-    <!-- 右側: メインマップ領域 -->
-    <main class="flex-1 h-full relative">
-        <div id="map" class="w-full h-full bg-slate-950"></div>
-    </main>
-
-    <!-- トースト通知 -->
-    <div id="toast" class="fixed bottom-6 left-1/2 -translate-x-1/2 z-[3000] px-4 py-2.5 rounded-xl text-xs font-bold shadow-2xl transition-all duration-300 pointer-events-none opacity-0 translate-y-10"></div>
-
-    <!-- 新規登録 / 編集 モーダル -->
-    <div id="modal-spot" class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-[2000] hidden items-center justify-center p-4">
-        <div class="bg-slate-900 border border-slate-700 rounded-2xl w-full max-w-md p-6 shadow-2xl space-y-4">
-            <div class="flex items-center justify-between border-b border-slate-800 pb-3">
-                <h2 id="modal-spot-title" class="font-bold text-sm text-slate-100">スポット情報の登録</h2>
-                <button type="button" onclick="closeSpotModal()" class="text-slate-400 hover:text-slate-100 text-lg">&times;</button>
+        <!-- 検索・絞り込みエリア -->
+        <div class="p-4 flex flex-col gap-3 border-b border-slate-800/60">
+            <div class="relative">
+                <span class="material-icons absolute left-3 top-2.5 text-slate-500 text-sm">search</span>
+                <input type="text" id="search-input" placeholder="店名や住所で検索..." class="w-full bg-slate-950/60 border border-slate-800 focus:border-slate-700 rounded-xl pl-9 pr-4 py-2 text-xs text-slate-200 outline-none placeholder:text-slate-600 transition-all font-bold">
             </div>
 
-            <form id="form-spot" class="space-y-3 text-xs">
-                <div>
-                    <label class="block text-slate-400 mb-1">名称 <span class="text-rose-400">*</span></label>
-                    <input type="text" id="form-title" required class="w-full bg-slate-800 border border-slate-700 rounded-lg p-2.5 text-slate-100 focus:outline-none focus:border-blue-500">
-                </div>
-
-                <div class="grid grid-cols-2 gap-2">
-                    <div>
-                        <label class="block text-slate-400 mb-1">大カテゴリ <span class="text-rose-400">*</span></label>
-                        <select id="form-category-main" required class="w-full bg-slate-800 border border-slate-700 rounded-lg p-2.5 text-slate-100 focus:outline-none focus:border-blue-500">
-                            <!-- dev.js で動的追加 -->
-                        </select>
+            <!-- カテゴリの折り畳み（アコーディオン） -->
+            <details class="group bg-slate-950/40 border border-slate-800/80 rounded-xl overflow-hidden">
+                <summary class="flex justify-between items-center px-3 py-2.5 text-xs font-bold text-slate-300 cursor-pointer hover:bg-slate-900/40 select-none list-none [&::-webkit-details-marker]:hidden">
+                    <div class="flex items-center gap-1.5">
+                        <span class="material-icons text-slate-500 text-sm">filter_alt</span>
+                        <span>カテゴリを絞り込む</span>
                     </div>
-                    <div>
-                        <label class="block text-slate-400 mb-1">小カテゴリ</label>
-                        <select id="form-category-sub" class="w-full bg-slate-800 border border-slate-700 rounded-lg p-2.5 text-slate-100 focus:outline-none focus:border-blue-500">
-                            <option value="">小カテゴリを選択</option>
-                        </select>
-                    </div>
-                </div>
+                    <span class="material-icons text-slate-500 text-sm transition-transform duration-200 group-open:rotate-180">expand_more</span>
+                </summary>
+                
+                <!-- チェックボックスのエリア -->
+                <div id="filter-checkboxes-container" class="px-3 pb-3 pt-1 flex flex-col gap-2 border-t border-slate-900/60 bg-slate-950/20"></div>
+            </details>
+        </div>
 
-                <div>
-                    <label class="block text-slate-400 mb-1">住所</label>
-                    <input type="text" id="form-address" class="w-full bg-slate-800 border border-slate-700 rounded-lg p-2.5 text-slate-100 focus:outline-none focus:border-blue-500">
-                </div>
-
-                <div>
-                    <label class="block text-slate-400 mb-1">電話番号</label>
-                    <input type="tel" id="form-tel" class="w-full bg-slate-800 border border-slate-700 rounded-lg p-2.5 text-slate-100 focus:outline-none focus:border-blue-500">
-                </div>
-
-                <div class="pt-3 flex justify-end gap-2">
-                    <button type="button" onclick="closeSpotModal()" class="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg font-bold">キャンセル</button>
-                    <button type="submit" class="px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-lg font-bold shadow">保存する</button>
-                </div>
-            </form>
+        <!-- スポット一覧 -->
+        <div class="flex-1 overflow-y-auto p-4 flex flex-col gap-2.5 bg-slate-900/30" id="spot-list-container">
+            <div id="list-counter" class="text-[10px] text-slate-500 font-bold tracking-wider px-1">該当スポット: 0 件</div>
+            <div id="spot-list" class="flex flex-col gap-2"></div>
         </div>
     </div>
 
-    <!-- 削除確認 モーダル -->
-    <div id="modal-delete" class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-[2000] hidden items-center justify-center p-4">
-        <div class="bg-slate-900 border border-slate-700 rounded-2xl w-full max-w-sm p-6 shadow-2xl space-y-4 text-center">
-            <div class="w-12 h-12 bg-rose-500/10 text-rose-500 rounded-full flex items-center justify-center mx-auto text-xl font-bold">！</div>
-            <div class="space-y-1">
-                <h3 class="font-bold text-sm text-slate-100">本当に削除しますか？</h3>
-                <p class="text-xs text-slate-400">この操作は取り消せません。</p>
+    <!-- 左下操作コンテナ -->
+    <div class="absolute bottom-6 left-6 z-[1001] flex flex-col shadow-2xl rounded-xl overflow-hidden">
+        <button id="toggle-sidebar" class="bg-slate-900 hover:bg-slate-800 border border-slate-800 text-slate-400 hover:text-white w-10 h-10 flex items-center justify-center transition-all cursor-pointer rounded-t-xl">
+            <span class="material-icons" id="sidebar-icon">menu_open</span>
+        </button>
+        <div id="zoom-control-wrapper" class="flex flex-col"></div>
+    </div>
+
+    <!-- メイン地図領域 -->
+    <div class="flex-1 h-full relative">
+        <div id="map"></div>
+        <button id="btn-reset-view" class="absolute bottom-6 right-6 z-[1000] bg-slate-900 hover:bg-slate-800 border border-slate-800 text-slate-400 hover:text-white w-10 h-10 rounded-xl shadow-2xl flex items-center justify-center transition-all cursor-pointer">
+            <span class="material-icons">my_location</span>
+        </button>
+    </div>
+
+    <!-- Infoモーダル -->
+    <div id="info-modal" class="fixed inset-0 z-[2000] hidden items-center justify-center bg-black/70 backdrop-blur-sm transition-opacity duration-300 opacity-0">
+        <div class="bg-slate-900 border border-slate-800 w-[90%] max-w-md p-6 rounded-2xl shadow-2xl flex flex-col gap-4 text-slate-300">
+            <div class="flex justify-between items-center border-b border-slate-800 pb-3">
+                <div class="flex items-center gap-2 font-bold text-white text-sm">
+                    <span class="material-icons text-amber-400 text-lg">construction</span>
+                    <span>管理用マップについて</span>
+                </div>
+                <button id="close-info" class="text-slate-500 hover:text-slate-300 cursor-pointer"><span class="material-icons">close</span></button>
             </div>
-            <div class="pt-2 flex justify-center gap-2 text-xs">
-                <button type="button" onclick="closeDeleteModal()" class="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg font-bold">キャンセル</button>
-                <button type="button" onclick="executeDeleteSpot()" class="px-4 py-2 bg-rose-600 hover:bg-rose-500 text-white rounded-lg font-bold shadow">削除実行</button>
+            <div class="text-xs space-y-3 leading-relaxed">
+                <p>データ追加用の管理用画面です。大カテゴリ・小カテゴリの構成定義は `json/category.json` を動的に参照しています。</p>
             </div>
         </div>
     </div>
 
-    <!-- JSファイルの読み込み（パス指定: js/common.js → js/dev.js） -->
+    <!-- 外部ライブラリ -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/leaflet-boundary-canvas@1.0.0/src/BoundaryCanvas.js"></script>
+
+    <!-- JSファイルの読み込み -->
     <script src="js/common.js"></script>
     <script src="js/dev.js"></script>
 </body>
