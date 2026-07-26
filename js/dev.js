@@ -19,8 +19,7 @@ window.onload = async function() {
     if (window.innerWidth < 768) setSidebarState(false);
     else setSidebarState(true);
 
-    // common.jsの関数でcategoriesMasterを取得
-    window.categoriesMaster = await loadCategoryMaster();
+    await loadCategoryMaster();
     
     const uniqueCategories = [...new Set(categoriesMaster.map(item => item.category))];
     appState.activeCategories = uniqueCategories;
@@ -31,10 +30,6 @@ window.onload = async function() {
 
     setupEventListeners();
 };
-
-function getCategoryConfig(categoryName) {
-    return categoriesMaster.find(item => item.category === categoryName) || { color: "#8b5cf6" };
-}
 
 function buildCategoryFilter() {
     const container = document.getElementById("filter-checkboxes-container");
@@ -107,8 +102,7 @@ function renderSpotOnMap(spot) {
     const lng = Number(spot.lng);
     if (!lat || !lng) return;
 
-    // common.js の createCustomIcon(categoryName, categoriesMaster) の仕様に合わせて修正
-    const marker = L.marker([lat, lng], { icon: createCustomIcon(spot.category, categoriesMaster) });
+    const marker = L.marker([lat, lng], { icon: createCustomIcon(spot.category) });
     marker.bindPopup(buildPopupHTML(spot), { maxWidth: 280, closeButton: false });
     
     marker.on('mouseover', function () {
@@ -213,7 +207,7 @@ function setupEventListeners() {
         if (tempMarker) map.removeLayer(tempMarker);
 
         const defaultCat = categoriesMaster[0] ? categoriesMaster[0].category : '';
-        tempMarker = L.marker(clickLatLng, { icon: createCustomIcon(defaultCat, categoriesMaster) }).addTo(map);
+        tempMarker = L.marker(clickLatLng, { icon: createCustomIcon(defaultCat) }).addTo(map);
 
         const uniqueCategories = [...new Set(categoriesMaster.map(item => item.category))];
         let categoryOptions = uniqueCategories.map(cat => `<option value="${cat}">${cat}</option>`).join('');
@@ -287,7 +281,7 @@ function setupEventListeners() {
             if(selectEl) {
                 selectEl.addEventListener('change', (ev) => {
                     if(ev.target.value && tempMarker) {
-                        tempMarker.setIcon(createCustomIcon(ev.target.value, categoriesMaster));
+                        tempMarker.setIcon(createCustomIcon(ev.target.value));
                     }
                 });
             }
@@ -308,21 +302,19 @@ function setupEventListeners() {
     });
 
     const infoModal = document.getElementById('info-modal');
-    if (document.getElementById('btn-info') && infoModal) {
-        document.getElementById('btn-info').addEventListener('click', () => {
-            infoModal.classList.remove('hidden');
-            infoModal.classList.add('flex');
-            setTimeout(() => {
-                infoModal.classList.remove('opacity-0');
-                infoModal.classList.add('opacity-100');
-            }, 10);
-        });
+    document.getElementById('btn-info').addEventListener('click', () => {
+        infoModal.classList.remove('hidden');
+        infoModal.classList.add('flex');
+        setTimeout(() => {
+            infoModal.classList.remove('opacity-0');
+            infoModal.classList.add('opacity-100');
+        }, 10);
+    });
 
-        document.getElementById('close-info').addEventListener('click', closeInfoModal);
-        infoModal.addEventListener('click', (e) => {
-            if (e.target === infoModal) closeInfoModal();
-        });
-    }
+    document.getElementById('close-info').addEventListener('click', closeInfoModal);
+    infoModal.addEventListener('click', (e) => {
+        if (e.target === infoModal) closeInfoModal();
+    });
 
     window.addEventListener('resize', () => {
         if (window.innerWidth < 768) setSidebarState(false);
@@ -332,7 +324,6 @@ function setupEventListeners() {
 
 function closeInfoModal() {
     const infoModal = document.getElementById('info-modal');
-    if (!infoModal) return;
     infoModal.classList.remove('opacity-100');
     infoModal.classList.add('opacity-0');
     setTimeout(() => {
@@ -387,12 +378,10 @@ window.updateFormSubcategories = function(selectedCat) {
     }
 
     filteredSubs.forEach(subName => {
-        if(subName) {
-            const opt = document.createElement('option');
-            opt.value = subName;
-            opt.textContent = subName;
-            subSelect.appendChild(opt);
-        }
+        const opt = document.createElement('option');
+        opt.value = subName;
+        opt.textContent = subName;
+        subSelect.appendChild(opt);
     });
 };
 
@@ -527,13 +516,11 @@ window.openEditForm = function(spotId) {
         subSelect.innerHTML = '';
         const filteredSubs = categoriesMaster.filter(item => item.category === selectedCat).map(item => item.subcategory);
         filteredSubs.forEach(subName => {
-            if(subName) {
-                const opt = document.createElement('option');
-                opt.value = subName;
-                opt.textContent = subName;
-                if(subName === spot.subcategory) opt.selected = true;
-                subSelect.appendChild(opt);
-            }
+            const opt = document.createElement('option');
+            opt.value = subName;
+            opt.textContent = subName;
+            if(subName === spot.subcategory) opt.selected = true;
+            subSelect.appendChild(opt);
         });
     };
     updateEditSubcategories(spot.category);

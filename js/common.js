@@ -96,8 +96,17 @@ async function loadDataFromSpreadsheet() {
 }
 
 // アイコン生成（JSONデータからダイレクト参照）
-function createCustomIcon(categoryName, categoriesMaster) {
-    const config = categoriesMaster.find(item => item.category === categoryName);
+// アイコン生成（大カテゴリ ＋ サブカテゴリ で一致するものを探す）
+function createCustomIcon(categoryName, subcategoryName, categoriesMaster) {
+    // まず「大カテゴリ」と「サブカテゴリ」が両方一致するものを探す
+    let config = categoriesMaster.find(item => 
+        item.category === categoryName && item.subcategory === subcategoryName
+    );
+    // もし見つからなければ、大カテゴリだけで探す
+    if (!config) {
+        config = categoriesMaster.find(item => item.category === categoryName);
+    }
+
     const iconUrl = config ? (config.icon_path || config.image) : null;
     
     if (iconUrl) {
