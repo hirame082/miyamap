@@ -3,6 +3,7 @@
 // ==========================================
 
 let map;
+let categoriesMaster = [];
 let appState = {
     spots: [],
     sidebarOpen: true,
@@ -19,8 +20,8 @@ window.onload = async function() {
     if (window.innerWidth < 768) setSidebarState(false);
     else setSidebarState(true);
 
-    // 2. カテゴリマスタの取得とグローバル変数への割り当て
-    window.categoriesMaster = await loadCategoryMaster();
+    // 2. カテゴリマスタの取得とフィルターの構築
+    categoriesMaster = await loadCategoryMaster();
     const uniqueCategories = [...new Set(categoriesMaster.map(item => item.category))];
     appState.activeCategories = [...uniqueCategories];
     buildCategoryFilter();
@@ -72,7 +73,7 @@ function buildCategoryFilter() {
     });
 }
 
-// 閲覧用ポップアップHTML構築
+// 閲覧用ポップアップHTML構築（編集・削除ボタンは除外）
 function buildPopupHTML(spot) {
     const config = getCategoryConfig(spot.category);
     const subLabel = spot.subcategory ? ` · ${spot.subcategory}` : "";
@@ -105,7 +106,6 @@ function renderSpotOnMap(spot) {
     const lng = Number(spot.lng);
     if (!lat || !lng) return;
 
-    // common.js の createCustomIcon(categoryName, categoriesMaster) に正しく渡す
     const marker = L.marker([lat, lng], { icon: createCustomIcon(spot.category, categoriesMaster) });
     marker.bindPopup(buildPopupHTML(spot), { maxWidth: 280, closeButton: false });
     
