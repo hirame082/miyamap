@@ -1,5 +1,5 @@
 // ==========================================
-// js/dev.js - 管理者画面専用スクリプト（完全版）
+// js/dev.js - 管理者画面専用スクリプト（編集修正版）
 // ==========================================
 
 let map;
@@ -14,7 +14,7 @@ let appState = {
 };
 
 const activeMarkers = new Map();
-let currentMarker = null; // 新規追加・編集時にマップ上に置く一時マーカー
+let currentMarker = null; // 新規追加・編集時に使う仮マーカー
 
 window.onload = async function() {
     // 1. マップの初期化（common.js）
@@ -126,7 +126,7 @@ function buildPopupHTML(spot) {
     `;
     
     if (spot.address) html += `<div class="flex items-start gap-1.5 text-slate-300"><span class="material-icons text-slate-400 shrink-0" style="font-size:13px; margin-top:2px;">place</span><span class="break-all">${spot.address}</span></div>`;
-    if (spot.hours) html += `<div class="flex items-start gap-1.5 text-slate-300"><span class="material-icons text-slate-400 shrink-0" style="font-size:13px; margin-top:2px;">schedule</span><span class="break-all">${spot.hours}</span></div>`;
+    if (spot.hours) html += `<div class="flex items-start gap-1.5 text-slate-300"><span class="material-icons text-slate-400 shrink-0" style="font-size:13px;">schedule</span><span class="break-all">${spot.hours}</span></div>`;
     if (spot.phone_fixed || spot.phone_mobile) {
         const tel = spot.phone_fixed || spot.phone_mobile;
         html += `<div class="flex items-center gap-1.5 text-slate-300"><span class="material-icons text-slate-400 shrink-0" style="font-size:13px;">phone</span><a href="tel:${tel}" class="break-all text-sky-400 hover:underline">${tel}</a></div>`;
@@ -143,7 +143,7 @@ function buildPopupHTML(spot) {
     return html;
 }
 
-// スポットのマーカー描画（大カテゴリ＋サブカテゴリで正しいピンを表示）
+// スポットのマーカー描画
 function renderSpotOnMap(spot) {
     const lat = Number(spot.lat);
     const lng = Number(spot.lng);
@@ -157,7 +157,7 @@ function renderSpotOnMap(spot) {
     });
     
     marker.addTo(map);
-    activeMarkers.set(spot.id, marker);
+    activeMarkers.set(String(spot.id), marker);
 }
 
 // 絞り込み＆検索の適用
@@ -217,7 +217,7 @@ function updateSpotListUI(displaySpots) {
 
         card.addEventListener('click', () => {
             map.setView([spot.lat, spot.lng], 16);
-            const marker = activeMarkers.get(spot.id);
+            const marker = activeMarkers.get(String(spot.id));
             if (marker) marker.openPopup();
             if (window.innerWidth < 768) setSidebarState(false);
         });
@@ -225,15 +225,17 @@ function updateSpotListUI(displaySpots) {
     });
 }
 
-// 編集モーダル・新規モーダル内のピンアイコンをリアルタイムで変更する処理
+// フォーム内で選択したカテゴリに合わせて、リアルタイムでピンのアイコンを変える処理
 function updateEditingMarkerIcon() {
     const cat = document.getElementById('edit-category').value;
     const subCat = document.getElementById('edit-subcategory').value;
 
-    if (currentMarker && cat) {
+    const targetMarker = currentMarker || activeMarkers.get(String(appState.editingSpotId));
+
+    if (targetMarker && cat) {
         const newIcon = createCustomIcon(cat, subCat, categoriesMaster);
         if (newIcon) {
-            currentMarker.setIcon(newIcon);
+            targetMarker.setIcon(newIcon);
         }
     }
 }
@@ -269,7 +271,7 @@ function setupEventListeners() {
                 btnToggleAdd.classList.add('bg-emerald-600', 'hover:bg-emerald-500');
                 btnToggleAdd.innerHTML = `<span class="material-icons text-sm">add_location_alt</span><span>スポットを追加</span>`;
                 mapEl.classList.remove('edit-active-cursor');
-                if (currentMarker && !appState.editingSpotId) {
+                if (currentMarker) {
                     map.removeLayer(currentMarker);
                     currentMarker = null;
                 }
@@ -277,7 +279,7 @@ function setupEventListeners() {
         });
     }
 
-    // 3. 大カテゴリ変更時（サブカテゴリリスト更新 ＆ アイコン即時変更）
+    // 3. 大カテゴリ変更時（サブカテゴリ更新 ＆ アイコン即時変更）
     document.getElementById('edit-category').addEventListener('change', function() {
         updateSubcategoryDropdown(this.value);
         updateEditingMarkerIcon();
@@ -327,8 +329,9 @@ function setupEventListeners() {
 function openAddModal(lat, lng) {
     appState.editingSpotId = null;
     document.getElementById('modal-title').textContent = '新規スポット追加';
-    document.getElementById('spot-form').reset();
     
+    // フォームクリア
+    document.getElementById('spot-form').reset();
     document.getElementById('edit-lat').value = lat;
     document.getElementById('edit-lng').value = lng;
     
@@ -343,34 +346,38 @@ function openAddModal(lat, lng) {
     modal.classList.add('flex');
 }
 
-// 編集モーダルを開く
+// 編集モーダルを開く（しっかりと既存値を読み込んで表示するよう修正）
 window.openEditModal = function(spotId) {
     const spot = appState.spots.find(s => String(s.id) === String(spotId));
-    if (!spot) return;
+    if (!spot) {
+        alert('対象のスポットが見つかりませんでした。');
+        return;
+    }
 
     appState.editingSpotId = spot.id;
     document.getElementById('modal-title').textContent = 'スポット編集';
 
-    document.getElementById('edit-id').value = spot.id;
-    document.getElementById('edit-name').value = spot.name || '';
-    document.getElementById('edit-category').value = spot.category || '';
+    // フォームに値をセット
+    const setVal = (id, val) => {
+        const el = document.getElementById(id);
+        if (el) el.value = val || '';
+    };
+
+    setVal('edit-name', spot.name);
+    setVal('edit-category', spot.category);
     
+    // サブカテゴリのドロップダウンを生成してから値をセット
     updateSubcategoryDropdown(spot.category, spot.subcategory);
     
-    document.getElementById('edit-address').value = spot.address || '';
-    document.getElementById('edit-hours').value = spot.hours || '';
-    document.getElementById('edit-phone-fixed').value = spot.phone_fixed || '';
-    document.getElementById('edit-phone-mobile').value = spot.phone_mobile || '';
-    document.getElementById('edit-desc').value = spot.desc || '';
-    document.getElementById('edit-lat').value = spot.lat;
-    document.getElementById('edit-lng').value = spot.lng;
+    setVal('edit-address', spot.address);
+    setVal('edit-hours', spot.hours);
+    setVal('edit-phone-fixed', spot.phone_fixed);
+    setVal('edit-phone-mobile', spot.phone_mobile);
+    setVal('edit-desc', spot.desc);
+    setVal('edit-lat', spot.lat);
+    setVal('edit-lng', spot.lng);
 
-    // 既存のピンを保持
-    if (currentMarker && !appState.spots.some(s => s.id === currentMarker.options.spotId)) {
-        map.removeLayer(currentMarker);
-    }
-    currentMarker = activeMarkers.get(spot.id);
-
+    // モーダル表示
     const modal = document.getElementById('spot-modal');
     modal.classList.remove('hidden');
     modal.classList.add('flex');
@@ -454,8 +461,11 @@ function closeModal() {
         modal.classList.remove('flex');
         modal.classList.add('hidden');
     }
+    if (currentMarker) {
+        map.removeLayer(currentMarker);
+        currentMarker = null;
+    }
     appState.editingSpotId = null;
-    currentMarker = null;
 }
 
 // サイドバー開閉 animation
