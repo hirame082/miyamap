@@ -14,130 +14,140 @@
     <link rel="stylesheet" href="css/style.css">
 
 </head>
-<body class="relative flex w-full h-full text-slate-200">
-    <header><!-- ヘッダー（上段） -->
-        <div class="logo">
-            <img src="images/logo.svg" width="60">
-        </div>
+<!-- 【修正点1】flex-col を追加して「ヘッダー」と「コンテンツ」を縦に並べる -->
+<body class="relative flex flex-col w-full h-screen text-slate-200">
 
-        <h1>みやマップ</h1>
+    <!-- ヘッダー（上段） -->
+    <header class="w-full bg-slate-900 border-b border-slate-800 p-4 flex items-center justify-between z-[1001]">
+        <div class="flex items-center gap-3">
+            <div class="logo">
+                <img src="images/logo.svg" width="60" alt="ロゴ">
+            </div>
+            <h1 class="text-xl font-bold text-white">みやマップ</h1>
+        </div>
         
         <nav>
-            <ul>
-                <li><a href="index.html">ホーム</a></li>
-                <li><a href="map.html">プロフィール</a></li>
-                <li><a href="gallery.html">ギャラリー</a></li>
-                <li><a href="contact.html">お問い合わせ</a></li>      
+            <ul class="flex gap-6">
+                <li><a href="index.html" class="hover:text-emerald-400">ホーム</a></li>
+                <li><a href="map.html" class="hover:text-emerald-400">プロフィール</a></li>
+                <li><a href="gallery.html" class="hover:text-emerald-400">ギャラリー</a></li>
+                <li><a href="contact.html" class="hover:text-emerald-400">お問い合わせ</a></li>      
             </ul>
-          
         </nav>
     </header>
-    <!-- ローディング画面 -->
-    <div id="loading"><div class="spinner"></div></div>
 
-    <!-- 左側サイドバーセクション -->
-    <div id="sidebar" class="w-[320px] h-full bg-slate-900/95 backdrop-blur-md border-r border-slate-800 flex flex-col shrink-0 z-[1000] transition-all duration-300 relative">
-        <div class="p-4 border-b border-slate-800 flex justify-between items-center bg-slate-950/40">
-            <div class="flex items-center gap-2">
-                <span class="material-icons text-emerald-400">map</span>
-                <h1 class="font-bold text-sm tracking-wide text-white">みやま市ローカルマップ</h1>
+    <!-- 【修正点1】ヘッダー下のコンテンツ領域（ここから下を横並び flex にする） -->
+    <div class="flex flex-1 w-full h-full relative overflow-hidden">
+
+        <!-- ローディング画面 -->
+        <div id="loading"><div class="spinner"></div></div>
+
+        <!-- 左側サイドバーセクション -->
+        <div id="sidebar" class="w-[320px] h-full bg-slate-900/95 backdrop-blur-md border-r border-slate-800 flex flex-col shrink-0 z-[1000] transition-all duration-300 relative">
+            <div class="p-4 border-b border-slate-800 flex justify-between items-center bg-slate-950/40">
+                <div class="flex items-center gap-2">
+                    <span class="material-icons text-emerald-400">map</span>
+                    <h1 class="font-bold text-sm tracking-wide text-white">みやま市ローカルマップ</h1>
+                </div>
+                <button id="btn-info" class="text-slate-400 hover:text-emerald-400 transition-colors cursor-pointer" title="このマップについて">
+                    <span class="material-icons text-xl">info</span>
+                </button>
             </div>
-            <button id="btn-info" class="text-slate-400 hover:text-emerald-400 transition-colors cursor-pointer" title="このマップについて">
-                <span class="material-icons text-xl">info</span>
+
+            <div class="p-4 flex flex-col gap-3 border-b border-slate-800/60">
+                <div class="relative">
+                    <span class="material-icons absolute left-3 top-2.5 text-slate-500 text-sm">search</span>
+                    <input type="text" id="search-input" placeholder="店名や住所で検索..." class="w-full bg-slate-950/60 border border-slate-800 focus:border-slate-700 rounded-xl pl-9 pr-4 py-2 text-xs text-slate-200 outline-none placeholder:text-slate-600 transition-all font-bold">
+                </div>
+
+                <details class="group bg-slate-950/40 border border-slate-800/80 rounded-xl overflow-hidden">
+                    <summary class="flex justify-between items-center px-3 py-2.5 text-xs font-bold text-slate-300 cursor-pointer hover:bg-slate-900/40 select-none list-none [&::-webkit-details-marker]:hidden">
+                        <div class="flex items-center gap-1.5">
+                            <span class="material-icons text-slate-500 text-sm">filter_alt</span>
+                            <span>カテゴリを絞り込む</span>
+                        </div>
+                        <span class="material-icons text-slate-500 text-sm transition-transform duration-200 group-open:rotate-180">expand_more</span>
+                    </summary>
+                    
+                    <!-- チェックボックスのエリア -->
+                    <div id="filter-checkboxes-container" class="px-3 pb-3 pt-1 flex flex-col gap-2 border-t border-slate-900/60 bg-slate-950/20"></div>
+                </details>
+            </div>
+
+            <div class="flex-1 overflow-y-auto p-4 flex flex-col gap-2.5 bg-slate-900/30" id="spot-list-container">
+                <div id="list-counter" class="text-[10px] text-slate-500 font-bold tracking-wider px-1">該当スポット: 0 件</div>
+                <div id="spot-list" class="flex flex-col gap-2"></div>
+            </div>
+        </div>
+
+        <div class="absolute bottom-6 left-6 z-[1001] flex flex-col shadow-2xl rounded-xl overflow-hidden">
+            <button id="toggle-sidebar" class="bg-slate-900 hover:bg-slate-800 border border-slate-800 text-slate-400 hover:text-white w-10 h-10 flex items-center justify-center transition-all cursor-pointer rounded-t-xl">
+                <span class="material-icons" id="sidebar-icon">menu_open</span>
+            </button>
+            <div id="zoom-control-wrapper" class="flex flex-col"></div>
+        </div>
+
+        <!-- メイン地図領域 -->
+        <div class="flex-1 h-full relative">
+            <div id="map"></div>
+            <button id="btn-reset-view" class="absolute bottom-6 right-6 z-[1000] bg-slate-900 hover:bg-slate-800 border border-slate-800 text-slate-400 hover:text-white w-10 h-10 rounded-xl shadow-2xl flex items-center justify-center transition-all cursor-pointer" title="初期位置に戻る">
+                <span class="material-icons">my_location</span>
             </button>
         </div>
 
-        <div class="p-4 flex flex-col gap-3 border-b border-slate-800/60">
-            <div class="relative">
-                <span class="material-icons absolute left-3 top-2.5 text-slate-500 text-sm">search</span>
-                <input type="text" id="search-input" placeholder="店名や住所で検索..." class="w-full bg-slate-950/60 border border-slate-800 focus:border-slate-700 rounded-xl pl-9 pr-4 py-2 text-xs text-slate-200 outline-none placeholder:text-slate-600 transition-all font-bold">
-            </div>
-
-            <details class="group bg-slate-950/40 border border-slate-800/80 rounded-xl overflow-hidden">
-                <summary class="flex justify-between items-center px-3 py-2.5 text-xs font-bold text-slate-300 cursor-pointer hover:bg-slate-900/40 select-none list-none [&::-webkit-details-marker]:hidden">
-                    <div class="flex items-center gap-1.5">
-                        <span class="material-icons text-slate-500 text-sm">filter_alt</span>
-                        <span>カテゴリを絞り込む</span>
+        <!-- Infoモーダル -->
+        <div id="info-modal" class="fixed inset-0 z-[2000] hidden items-center justify-center bg-black/70 backdrop-blur-sm transition-opacity duration-300 opacity-0">
+            <div class="bg-slate-900 border border-slate-800 w-[90%] max-w-md p-6 rounded-2xl shadow-2xl flex flex-col gap-4 text-slate-300">
+                <div class="flex justify-between items-center border-b border-slate-800 pb-3">
+                    <div class="flex items-center gap-2 font-bold text-white text-sm">
+                        <span class="material-icons text-emerald-400 text-lg">info</span>
+                        <span>このマップについて</span>
                     </div>
-                    <span class="material-icons text-slate-500 text-sm transition-transform duration-200 group-open:rotate-180">expand_more</span>
-                </summary>
-                
-                <!-- チェックボックスのエリア -->
-                <div id="filter-checkboxes-container" class="px-3 pb-3 pt-1 flex flex-col gap-2 border-t border-slate-900/60 bg-slate-950/20"></div>
-            </details>
-        </div>
-
-        <div class="flex-1 overflow-y-auto p-4 flex flex-col gap-2.5 bg-slate-900/30" id="spot-list-container">
-            <div id="list-counter" class="text-[10px] text-slate-500 font-bold tracking-wider px-1">該当スポット: 0 件</div>
-            <div id="spot-list" class="flex flex-col gap-2"></div>
-        </div>
-    </div>
-
-    <div class="absolute bottom-6 left-6 z-[1001] flex flex-col shadow-2xl rounded-xl overflow-hidden">
-        <button id="toggle-sidebar" class="bg-slate-900 hover:bg-slate-800 border border-slate-800 text-slate-400 hover:text-white w-10 h-10 flex items-center justify-center transition-all cursor-pointer rounded-t-xl">
-            <span class="material-icons" id="sidebar-icon">menu_open</span>
-        </button>
-        <div id="zoom-control-wrapper" class="flex flex-col"></div>
-    </div>
-
-    <!-- メイン地図領域 -->
-    <div class="flex-1 h-full relative">
-        <div id="map"></div>
-        <button id="btn-reset-view" class="absolute bottom-6 right-6 z-[1000] bg-slate-900 hover:bg-slate-800 border border-slate-800 text-slate-400 hover:text-white w-10 h-10 rounded-xl shadow-2xl flex items-center justify-center transition-all cursor-pointer" title="初期位置に戻る">
-            <span class="material-icons">my_location</span>
-        </button>
-    </div>
-
-    <!-- Infoモーダル -->
-    <div id="info-modal" class="fixed inset-0 z-[2000] hidden items-center justify-center bg-black/70 backdrop-blur-sm transition-opacity duration-300 opacity-0">
-        <div class="bg-slate-900 border border-slate-800 w-[90%] max-w-md p-6 rounded-2xl shadow-2xl flex flex-col gap-4 text-slate-300">
-            <div class="flex justify-between items-center border-b border-slate-800 pb-3">
-                <div class="flex items-center gap-2 font-bold text-white text-sm">
-                    <span class="material-icons text-emerald-400 text-lg">info</span>
-                    <span>このマップについて</span>
+                    <button id="close-info" class="text-slate-500 hover:text-slate-300 cursor-pointer">
+                        <span class="material-icons">close</span>
+                    </button>
                 </div>
-                <button id="close-info" class="text-slate-500 hover:text-slate-300 cursor-pointer">
-                    <span class="material-icons">close</span>
-                </button>
-            </div>
-            <div class="text-xs space-y-3 leading-relaxed">
-                <p>福岡県みやま市内のローカルスポットや店舗情報をまとめたWebマップアプリケーションです。</p>
-                <div class="bg-slate-950/50 border border-slate-800/80 p-3 rounded-xl space-y-1.5">
-                    <div class="font-bold text-white">💡 主な機能</div>
-                    <p>・カーソルを合わせると情報が表示されます。</p>
-                    <p>・ピンが無い場所をクリックすると、表示が消えます。</p>
-                    <p>・スポット一覧をクリックすると該当の場所へスムーズに移動します。</p>
+                <div class="text-xs space-y-3 leading-relaxed">
+                    <p>福岡県みやま市内のローカルスポットや店舗情報をまとめたWebマップアプリケーションです。</p>
+                    <div class="bg-slate-950/50 border border-slate-800/80 p-3 rounded-xl space-y-1.5">
+                        <div class="font-bold text-white">💡 主な機能</div>
+                        <p>・カーソルを合わせると情報が表示されます。</p>
+                        <p>・ピンが無い場所をクリックすると、表示が消えます。</p>
+                        <p>・スポット一覧をクリックすると該当の場所へスムーズに移動します。</p>
+                    </div>
+                    <p class="text-slate-500 text-[11px]">※掲載データは最新でない場合がございます。</p>
                 </div>
-                <p class="text-slate-500 text-[11px]">※掲載データは最新でない場合がございます。</p>
             </div>
         </div>
-    </div>
 
-    <!-- 電話番号確認モーダル -->
-    <div id="tel-modal" class="fixed inset-0 z-[2000] hidden items-center justify-center bg-black/70 backdrop-blur-sm">
-        <div class="bg-slate-900 border border-slate-800 w-[90%] max-w-xs p-5 rounded-2xl shadow-2xl flex flex-col gap-4 text-slate-300">
-            <div class="flex items-center gap-2 font-bold text-amber-400 text-sm border-b border-slate-800 pb-2">
-                <span class="material-icons">warning</span>
-                <span>確認が必要です</span>
-            </div>
-            <p class="text-xs leading-relaxed text-slate-300">
-                表示された電話番号への<strong class="text-white font-bold">「営業目的の電話」は固く禁止</strong>されています。よろしいですか？
-            </p>
-            <label class="flex items-start gap-2 bg-slate-950/60 border border-slate-800 p-2.5 rounded-xl cursor-pointer select-none">
-                <input type="checkbox" id="tel-agree-check" class="accent-emerald-500 rounded mt-0.5">
-                <span class="text-[11px] text-slate-400 leading-tight font-bold">営業目的の電話ではありません。</span>
-            </label>
-            <div class="flex gap-2.5 mt-1">
-                <button id="btn-tel-cancel" class="flex-1 bg-slate-800 hover:bg-slate-700 text-slate-300 py-2 rounded-lg text-xs font-bold transition-all border border-slate-700">閉じる</button>
-                <button id="btn-tel-confirm" disabled class="flex-1 bg-emerald-600/50 text-slate-400 py-2 rounded-lg text-xs font-bold transition-all cursor-not-allowed">同意して表示</button>
+        <!-- 電話番号確認モーダル -->
+        <div id="tel-modal" class="fixed inset-0 z-[2000] hidden items-center justify-center bg-black/70 backdrop-blur-sm">
+            <div class="bg-slate-900 border border-slate-800 w-[90%] max-w-xs p-5 rounded-2xl shadow-2xl flex flex-col gap-4 text-slate-300">
+                <div class="flex items-center gap-2 font-bold text-amber-400 text-sm border-b border-slate-800 pb-2">
+                    <span class="material-icons">warning</span>
+                    <span>確認が必要です</span>
+                </div>
+                <p class="text-xs leading-relaxed text-slate-300">
+                    表示された電話番号への<strong class="text-white font-bold">「営業目的の電話」は固く禁止</strong>されています。よろしいですか？
+                </p>
+                <label class="flex items-start gap-2 bg-slate-950/60 border border-slate-800 p-2.5 rounded-xl cursor-pointer select-none">
+                    <input type="checkbox" id="tel-agree-check" class="accent-emerald-500 rounded mt-0.5">
+                    <span class="text-[11px] text-slate-400 leading-tight font-bold">営業目的の電話ではありません。</span>
+                </label>
+                <div class="flex gap-2.5 mt-1">
+                    <button id="btn-tel-cancel" class="flex-1 bg-slate-800 hover:bg-slate-700 text-slate-300 py-2 rounded-lg text-xs font-bold transition-all border border-slate-700">閉じる</button>
+                    <button id="btn-tel-confirm" disabled class="flex-1 bg-emerald-600/50 text-slate-400 py-2 rounded-lg text-xs font-bold transition-all cursor-not-allowed">同意して表示</button>
+                </div>
             </div>
         </div>
-    </div>
+
+    </div> <!-- コンテンツ領域の終わり -->
 
     <!-- Leaflet & BoundaryCanvas JS -->
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/leaflet-boundary-canvas@1.0.0/src/BoundaryCanvas.js"></script>
     <script src="js/common.js"></script>
+    <!-- 【修正点2】category.jsonのエラーが出る場合は、JSONを読み込んでいるJSファイル（map.js）の記述やパスを確認、または地図を使わないページならコメントアウトします -->
     <script src="js/map.js"></script>
 </body>
 </html>
