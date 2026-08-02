@@ -1,24 +1,24 @@
 <!DOCTYPE html>
 <html lang="ja">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>みやま市ローカルマップ</title>
-    <!-- Tailwind CSS -->
-    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
-    <!-- Leaflet CSS -->
-    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-    <!-- Material Icons -->
-    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
-    
-    <link rel="stylesheet" href="css/style.css">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>みやま市ローカルマップ</title>
+        <!-- Tailwind CSS -->
+        <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+        <!-- Leaflet CSS -->
+        <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+        <!-- Material Icons -->
+        <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+        
+        <link rel="stylesheet" href="css/style.css">
 
-</head>
-<!-- 【修正点1】flex-col を追加して「ヘッダー」と「コンテンツ」を縦に並べる -->
-<body class="relative flex flex-col w-full h-screen text-slate-200">
+    </head>
+    <!-- 【修正点1】flex-col を追加して「ヘッダー」と「コンテンツ」を縦に並べる -->
+    <body class="relative flex flex-col w-full h-screen text-slate-200">
 
     <!-- ヘッダー（上段） -->
-    <header class="w-full bg-slate-900 border-b border-slate-800 p-4 flex items-center justify-between z-[1001]">
+    <header class="w-full bg-slate-900 border-b border-slate-800 px-6 py-4 flex items-center justify-between shrink-0 z-[1001]">
         <div class="flex items-center gap-3">
             <div class="logo">
                 <img src="images/logo.svg" width="60" alt="ロゴ">
@@ -28,10 +28,10 @@
         
         <nav>
             <ul class="flex gap-6">
-                <li><a href="index.html" class="hover:text-emerald-400">ホーム</a></li>
-                <li><a href="map.html" class="hover:text-emerald-400">プロフィール</a></li>
-                <li><a href="gallery.html" class="hover:text-emerald-400">ギャラリー</a></li>
-                <li><a href="contact.html" class="hover:text-emerald-400">お問い合わせ</a></li>      
+                <li><a href="index.html" class="hover:text-emerald-400 text-sm font-bold">ホーム</a></li>
+                <li><a href="map.html" class="hover:text-emerald-400 text-sm font-bold">地図で見る</a></li>
+                <li><a href="gallery.html" class="hover:text-emerald-400 text-sm font-bold">ギャラリー</a></li>
+                <li><a href="contact.html" class="hover:text-emerald-400 text-sm font-bold">お問い合わせ</a></li>      
             </ul>
         </nav>
     </header>
@@ -80,11 +80,13 @@
             </div>
         </div>
 
-        <div class="absolute bottom-6 left-6 z-[1001] flex flex-col shadow-2xl rounded-xl overflow-hidden">
-            <button id="toggle-sidebar" class="bg-slate-900 hover:bg-slate-800 border border-slate-800 text-slate-400 hover:text-white w-10 h-10 flex items-center justify-center transition-all cursor-pointer rounded-t-xl">
+        <div class="absolute bottom-20 right-6 z-[1001] flex flex-col gap-2">
+            <!-- サイドバー切り替えボタン -->
+            <button id="toggle-sidebar" class="bg-slate-900 hover:bg-slate-800 border border-slate-800 text-slate-400 hover:text-white w-10 h-10 flex items-center justify-center transition-all cursor-pointer rounded-xl shadow-2xl">
                 <span class="material-icons" id="sidebar-icon">menu_open</span>
             </button>
-            <div id="zoom-control-wrapper" class="flex flex-col"></div>
+            <!-- ズームボタン枠 -->
+            <div id="zoom-control-wrapper" class="flex flex-col shadow-2xl rounded-xl overflow-hidden"></div>
         </div>
 
         <!-- メイン地図領域 -->
