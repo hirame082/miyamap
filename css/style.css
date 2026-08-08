@@ -1,101 +1,141 @@
-        body, html {
-            height: 100%;
-            margin: 0;
-            padding: 0;
-            font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-            background-color: #f0eacd;
-        }
-        header {
-            display: flex;
-            align-items: center;
-        }
-        nav {
-        margin-left: auto;
-        width: 40%;
-        }
+body, html {
+    height: 100%;
+    margin: 0;
+    padding: 0;
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    background-color: #fdfbf7;
+    color: #2d3748;
+}
 
-        nav ul {
-            display: flex;
-            justify-content: space-around;
-            list-style: none;
-            color: black;
-        }
+/* --- ヘッダー・ナビゲーション (CSS定義) --- */
+header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background-color: #1e3a2b; /* フォレストグリーン */
+    border-bottom: 1px solid #162e22;
+    padding: 0.75rem 1.5rem;
+    width: 100%;
+    box-sizing: border-box;
+    position: relative;
+    z-index: 1001;
+    flex-shrink: 0;
+}
 
-        nav ul a {
-            color: black;
-            text-decoration: none;
-        }
+.header-brand {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+}
 
-        nav ul a:visited {
-            color: black;
-        }
+.header-title {
+    font-size: 1.25rem;
+    font-weight: bold;
+    color: #ffffff;
+    margin: 0;
+}
 
-        nav ul a:hover {
-            color: gray;
-        }
-                #map {
-            width: 100%;
-            height: 100%;
-            z-index: 1;
-            background: transparent;
-        }
-        .leaflet-control-zoom {
-            border: none !important;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.15) !important;
-        }
-        .leaflet-bar a {
-            background-color: #0f172a !important;
-            color: #f8fafc !important;
-            border-bottom: 1px solid #1e293b !important;
-            transition: background 0.2s, color 0.2s;
-        }
-        .leaflet-bar a:hover {
-            background-color: #1e293b !important;
-        }
-        .edit-active-cursor {
-            cursor: cell !important;
-        }
-        .fade-in-el {
-            animation: fadeIn 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards;
-        }
-        @keyframes fadeIn {
-            from { opacity: 0; transform: scale(0.95); }
-            to { opacity: 1; transform: scale(1); }
-        }
-        .leaflet-popup-content-wrapper {
-            background: #0f172a !important;
-            color: #f8fafc !important;
-            border: 1px solid #334155 !important;
-            border-radius: 12px !important;
-            padding: 4px !important;
-        }
-        .leaflet-popup-tip {
-            background: #0f172a !important;
-            border-left: 1px solid #334155 !important;
-            border-bottom: 1px solid #334155 !important;
-        }
-        /* ローディングインジケータ */
-        .loading-overlay {
-            position: fixed;
-            inset: 0;
-            background: rgba(15, 23, 42, 0.7);
-            backdrop-filter: blur(4px);
-            z-index: 9999;
-            display: flex;
-            justify-content: center;
-            items-center: center;
-            opacity: 0;
-            pointer-events: none;
-            transition: opacity 0.3s ease;
-        }
-        .loading-overlay.active {
-            opacity: 1;
-            pointer-events: auto;
-        }
+nav {
+    margin-left: auto;
+}
 
-        body input[type="text"],
-        body input[type="tel"],
-        body textarea,
-        body select {
-            caret-color: transparent !important;
-        }
+nav ul {
+    display: flex;
+    align-items: center;
+    gap: 1.5rem;
+    list-style: none;
+    margin: 0;
+    padding: 0;
+}
+
+/* ナビゲーションリンク（基本：白） */
+nav ul a,
+nav ul a:visited {
+    color: #ffffff;
+    text-decoration: none;
+    font-size: 0.875rem;
+    font-weight: bold;
+    transition: color 0.2s ease;
+}
+
+/* ホバー時（灰色） */
+nav ul a:hover {
+    color: #9ca3af;
+}
+
+/* 開いているページ / クリック時（タンカラー） */
+nav ul a:active,
+nav ul a.active {
+    color: #d2b48c; /* タンカラー */
+}
+
+/* --- 地図・UI関連 --- */
+#map {
+    width: 100%;
+    height: 100%;
+    z-index: 1;
+    background: transparent;
+}
+.leaflet-control-zoom {
+    border: none !important;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15) !important;
+    border-radius: 12px !important;
+    overflow: hidden;
+}
+.leaflet-bar a {
+    background-color: #1e3a2b !important;
+    color: #f8fafc !important;
+    border-bottom: 1px solid #162e22 !important;
+    transition: background 0.2s, color 0.2s;
+    border-radius: 0 !important;
+}
+.leaflet-bar a:hover {
+    background-color: #2a503c !important;
+}
+.edit-active-cursor {
+    cursor: cell !important;
+}
+.fade-in-el {
+    animation: fadeIn 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+@keyframes fadeIn {
+    from { opacity: 0; transform: scale(0.95); }
+    to { opacity: 1; transform: scale(1); }
+}
+.leaflet-popup-content-wrapper {
+    background: #0f172a !important;
+    color: #f8fafc !important;
+    border: 1px solid #334155 !important;
+    border-radius: 12px !important;
+    padding: 4px !important;
+}
+.leaflet-popup-tip {
+    background: #0f172a !important;
+    border-left: 1px solid #334155 !important;
+    border-bottom: 1px solid #334155 !important;
+}
+/* ローディングインジケータ */
+.loading-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(15, 23, 42, 0.7);
+    backdrop-filter: blur(4px);
+    z-index: 9999;
+    display: flex;
+    justify-content: center;
+    items-center: center;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.3s ease;
+}
+.loading-overlay.active {
+    opacity: 1;
+    pointer-events: auto;
+}
+
+body input[type="text"],
+body input[type="tel"],
+body textarea,
+body select {
+    caret-color: transparent !important;
+}

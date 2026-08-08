@@ -14,29 +14,28 @@
         <link rel="stylesheet" href="css/style.css">
 
     </head>
-    <!-- 【修正点1】flex-col を追加して「ヘッダー」と「コンテンツ」を縦に並べる -->
     <body class="relative flex flex-col w-full h-screen text-slate-200">
 
     <!-- ヘッダー（上段） -->
-    <header class="w-full bg-slate-900 border-b border-slate-800 px-6 py-4 flex items-center justify-between shrink-0 z-[1001]">
-        <div class="flex items-center gap-3">
+    <header>
+        <div class="header-brand">
             <div class="logo">
                 <img src="images/logo.svg" width="60" alt="ロゴ">
             </div>
-            <h1 class="text-xl font-bold text-white">みやマップ</h1>
+            <h1 class="header-title">みやマップ</h1>
         </div>
         
         <nav>
-            <ul class="flex gap-6">
-                <li><a href="index.html" class="hover:text-emerald-400 text-sm font-bold">ホーム</a></li>
-                <li><a href="map.html" class="hover:text-emerald-400 text-sm font-bold">地図で見る</a></li>
-                <li><a href="gallery.html" class="hover:text-emerald-400 text-sm font-bold">ギャラリー</a></li>
-                <li><a href="contact.html" class="hover:text-emerald-400 text-sm font-bold">お問い合わせ</a></li>      
+            <ul>
+                <li><a href="index.html">ホーム</a></li>
+                <li><a href="map.html" class="active">地図で見る</a></li>
+                <li><a href="gallery.html">ギャラリー</a></li>
+                <li><a href="contact.html">お問い合わせ</a></li>      
             </ul>
         </nav>
     </header>
 
-    <!-- 【修正点1】ヘッダー下のコンテンツ領域（ここから下を横並び flex にする） -->
+    <!-- ヘッダー下のコンテンツ領域 -->
     <div class="flex flex-1 w-full h-full relative overflow-hidden">
 
         <!-- ローディング画面 -->
@@ -149,7 +148,6 @@
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/leaflet-boundary-canvas@1.0.0/src/BoundaryCanvas.js"></script>
     <script src="js/common.js"></script>
-    <!-- 【修正点2】category.jsonのエラーが出る場合は、JSONを読み込んでいるJSファイル（map.js）の記述やパスを確認、または地図を使わないページならコメントアウトします -->
     <script src="js/map.js"></script>
 </body>
 </html>
