@@ -57,7 +57,7 @@ function initBaseMap() {
     map.setMaxBounds(miyamaBounds);
 
     L.TileLayer.boundaryCanvas('https://tile.openstreetmap.jp/{z}/{x}/{y}.png', {
-        boundary: miyamaGeoJSON, attribution: '&copy; OpenStreetMap contributors', maxZoom: 19
+        boundary: miyamaGeoJSON, attribution: '&copy; OpenStreetMap contributors', maxZoom: 19 ,backgroundColor: '#d2b48c'
     }).addTo(map);
     // 1. 土台のぼかしもタンカラー (#d2b48c) に変更
     const blurryEdge = L.polygon(miyamaBorderLatLng, { color: '#d2b48c', weight: 30, opacity: 0.8, fill: false, interactive: false }).addTo(map);
