@@ -59,13 +59,14 @@ function initBaseMap() {
     L.TileLayer.boundaryCanvas('https://tile.openstreetmap.jp/{z}/{x}/{y}.png', {
         boundary: miyamaGeoJSON, attribution: '&copy; OpenStreetMap contributors', maxZoom: 19
     }).addTo(map);
-
-    const blurryEdge = L.polygon(miyamaBorderLatLng, { color: '#0f172a', weight: 30, opacity: 0.9, fill: false, interactive: false }).addTo(map);
+    // 1. 土台のぼかしもタンカラー (#d2b48c) に変更
+    const blurryEdge = L.polygon(miyamaBorderLatLng, { color: '#d2b48c', weight: 30, opacity: 0.8, fill: false, interactive: false }).addTo(map);
     if (blurryEdge.getElement()) blurryEdge.getElement().style.filter = 'blur(15px)';
-    L.polygon(miyamaBorderLatLng, { color: '#0f172a', weight: 6, opacity: 0.9, fillColor: 'transparent', interactive: false }).addTo(map);
 
-    return map;
-}
+    // 2. 上に重ねるくっきりした実線もタンカラー (#d2b48c) に変更
+    L.polygon(miyamaBorderLatLng, { color: '#d2b48c', weight: 6, opacity: 0.9, fillColor: 'transparent', interactive: false }).addTo(map);
+        return map;
+    }
 
 // カテゴリマスタ読み込み（そのまま取得して返すだけ）
 async function loadCategoryMaster() {
