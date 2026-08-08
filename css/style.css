@@ -3,70 +3,70 @@ body, html {
     margin: 0;
     padding: 0;
     font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-    background-color: #fdfbf7;
-    color: #2d3748;
+    background-color: #fdfbf7 !important; /* 全体背景：タンカラー/アイボリー系 */
+    color: #2d3748 !important;
 }
 
-/* --- ヘッダー・ナビゲーション (CSS定義) --- */
+/* --- ヘッダー・ナビゲーション (フォレストグリーン固定) --- */
 header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    background-color: #1e3a2b; /* フォレストグリーン */
-    border-bottom: 1px solid #162e22;
-    padding: 0.75rem 1.5rem;
-    width: 100%;
-    box-sizing: border-box;
-    position: relative;
-    z-index: 1001;
-    flex-shrink: 0;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+    background-color: #1e3a2b !important; /* フォレストグリーン */
+    border-bottom: 1px solid #162e22 !important;
+    padding: 0.75rem 1.5rem !important;
+    width: 100% !important;
+    box-sizing: border-box !important;
+    position: relative !important;
+    z-index: 1001 !important;
+    flex-shrink: 0 !important;
 }
 
 .header-brand {
-    display: flex;
-    align-items: center;
-    gap: 0.75rem;
+    display: flex !important;
+    align-items: center !important;
+    gap: 0.75rem !important;
 }
 
 .header-title {
-    font-size: 1.25rem;
-    font-weight: bold;
-    color: #ffffff;
-    margin: 0;
+    font-size: 1.25rem !important;
+    font-weight: bold !important;
+    color: #ffffff !important;
+    margin: 0 !important;
 }
 
 nav {
-    margin-left: auto;
+    margin-left: auto !important;
 }
 
 nav ul {
-    display: flex;
-    align-items: center;
-    gap: 1.5rem;
-    list-style: none;
-    margin: 0;
-    padding: 0;
+    display: flex !important;
+    align-items: center !important;
+    gap: 1.5rem !important;
+    list-style: none !important;
+    margin: 0 !important;
+    padding: 0 !important;
 }
 
-/* ナビゲーションリンク（基本：白） */
+/* ナビゲーションリンク（基本：文字色 ホワイト） */
 nav ul a,
 nav ul a:visited {
-    color: #ffffff;
-    text-decoration: none;
-    font-size: 0.875rem;
-    font-weight: bold;
-    transition: color 0.2s ease;
+    color: #ffffff !important;
+    text-decoration: none !important;
+    font-size: 0.875rem !important;
+    font-weight: bold !important;
+    transition: color 0.2s ease !important;
 }
 
-/* ホバー時（灰色） */
+/* ホバー時（グレー） */
 nav ul a:hover {
-    color: #9ca3af;
+    color: #9ca3af !important;
 }
 
-/* 開いているページ / クリック時（タンカラー） */
+/* アクティブ/選択中ページ（タンカラー） */
 nav ul a:active,
 nav ul a.active {
-    color: #d2b48c; /* タンカラー */
+    color: #d2b48c !important; /* タンカラー */
 }
 
 /* --- 地図・UI関連 --- */
@@ -123,7 +123,7 @@ nav ul a.active {
     z-index: 9999;
     display: flex;
     justify-content: center;
-    items-center: center;
+    align-items: center;
     opacity: 0;
     pointer-events: none;
     transition: opacity 0.3s ease;
