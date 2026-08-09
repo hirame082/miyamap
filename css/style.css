@@ -229,3 +229,15 @@ body select {
 .leaflet-popup-content p {
     color: #2c3e35 !important;
 }
+
+/* スポットカード内のすべてのテキストを濃い色に強制統一 */
+#spot-list *,
+.spot-item * {
+    color: #2c3e35 !important;
+}
+
+/* カテゴリタグなどの背景が明るすぎて文字が見えにくい場合の調整 */
+#spot-list .tag,
+#spot-list [class*="bg-"] {
+    color: #2c3e35 !important;
+}
