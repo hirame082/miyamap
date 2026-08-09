@@ -9,31 +9,30 @@
         <!-- Material Icons -->
         <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
         
-        <!-- style.css を一番最後に読み込んでスタイルを優先させる -->
         <link rel="stylesheet" href="css/style.css">
     </head>
     <body>
 
-        <!-- ヘッダー（CSS一本化） -->
+    <!-- ヘッダー（上段） -->
         <header>
-            <div class="header-brand">
+            <div class="flex items-center gap-3">
                 <div class="logo">
                     <img src="images/logo.svg" width="60" alt="ロゴ">
                 </div>
-                <h1 class="header-title">みやマップ</h1>
+                <h1 class="text-xl font-bold text-white">みやマップ</h1>
             </div>
             
             <nav>
-                <ul>
-                    <li><a href="index.html" class="active">ホーム</a></li>
-                    <li><a href="map.html">地図で見る</a></li>
-                    <li><a href="gallery.html">ギャラリー</a></li>
-                    <li><a href="contact.html">お問い合わせ</a></li>      
+                <ul class="flex gap-6">
+                    <li><a href="index.html" class="active text-sm font-bold">ホーム</a></li>
+                    <li><a href="map.html" class="text-sm font-bold">地図で見る</a></li>
+                    <li><a href="gallery.html" class="text-sm font-bold">ギャラリー</a></li>
+                    <li><a href="contact.html" class="text-sm font-bold">お問い合わせ</a></li>      
                 </ul>
             </nav>
         </header>
 
-        <!-- メインコンテンツ -->
+        <!-- ホーム（トップページ）のメインコンテンツ -->
         <main class="container mx-auto p-8">
             <div>
                 <div>

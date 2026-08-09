@@ -26,10 +26,10 @@
         
         <nav>
             <ul class="flex gap-6">
-                <li><a href="index.html" class="hover:text-emerald-400 text-sm font-bold">ホーム</a></li>
-                <li><a href="map.html" class="hover:text-emerald-400 text-sm font-bold">地図で見る</a></li>
-                <li><a href="gallery.html" class="hover:text-emerald-400 text-sm font-bold">ギャラリー</a></li>
-                <li><a href="contact.html" class="hover:text-emerald-400 text-sm font-bold">お問い合わせ</a></li>      
+                <li><a href="index.html" class="text-sm font-bold">ホーム</a></li>
+                <li><a href="map.html" class="active text-sm font-bold">地図で見る</a></li>
+                <li><a href="gallery.html" class="text-sm font-bold">ギャラリー</a></li>
+                <li><a href="contact.html" class="text-sm font-bold">お問い合わせ</a></li>      
             </ul>
         </nav>
     </header>
@@ -81,22 +81,25 @@
             </div>
         </div>
 
-        <!-- 右下操作ボタン群 -->
-        <div class="map-controls absolute bottom-20 right-6 flex flex-col gap-2">
-            <!-- サイドバー切り替えボタン -->
-            <button id="toggle-sidebar" class="ctrl-btn w-10 h-10 flex items-center justify-center cursor-pointer rounded-xl shadow-lg">
-                <span class="material-icons" id="sidebar-icon">menu_open</span>
-            </button>
-            <!-- ズームボタン枠 -->
-            <div id="zoom-control-wrapper" class="flex flex-col shadow-lg rounded-xl overflow-hidden ctrl-btn"></div>
-        </div>
-
         <!-- メイン地図領域 -->
         <div class="flex-1 h-full relative">
             <div id="map" class="w-full h-full"></div>
-            <button id="btn-reset-view" class="ctrl-btn absolute bottom-6 right-6 w-10 h-10 rounded-xl shadow-lg flex items-center justify-center cursor-pointer" title="初期位置に戻る">
-                <span class="material-icons">my_location</span>
-            </button>
+
+            <!-- 右下操作ボタン群 (最前面 z-index: 1000 に配置) -->
+            <div class="map-controls absolute bottom-6 right-6 flex flex-col gap-3">
+                <!-- 1. サイドバー切り替えボタン -->
+                <button id="toggle-sidebar" class="ctrl-btn w-10 h-10 flex items-center justify-center cursor-pointer rounded-xl" title="サイドバー切替">
+                    <span class="material-icons" id="sidebar-icon">menu_open</span>
+                </button>
+
+                <!-- 2. ズームボタン枠 -->
+                <div id="zoom-control-wrapper" class="ctrl-btn rounded-xl overflow-hidden flex flex-col"></div>
+
+                <!-- 3. 初期位置に戻るボタン -->
+                <button id="btn-reset-view" class="ctrl-btn w-10 h-10 rounded-xl flex items-center justify-center cursor-pointer" title="初期位置に戻る">
+                    <span class="material-icons">my_location</span>
+                </button>
+            </div>
         </div>
 
         <!-- Infoモーダル -->
