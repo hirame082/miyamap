@@ -188,3 +188,44 @@ body select {
     box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
     transform: translateY(-1px);
 }
+
+/* ==========================================
+   サイドバー内のテキスト色修正
+   ========================================== */
+
+/* カード内のタイトルや本文をダークグリーン〜濃いグレーにする */
+#spot-list {
+    color: #2c3e35 !important;
+}
+
+#spot-list h2, 
+#spot-list h3, 
+#spot-list p, 
+#spot-list span, 
+#spot-list div {
+    color: #2c3e35;
+}
+
+
+/* ==========================================
+   地図上のポップアップ（黒ピン吹き出し）の修正
+   ========================================== */
+
+/* 吹き出し全体を明るい背景とダークテキストに変更 */
+.leaflet-popup-content-wrapper, 
+.leaflet-popup-tip {
+    background-color: #ffffff !important;
+    color: #2c3e35 !important;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15) !important;
+}
+
+.leaflet-popup-content {
+    color: #2c3e35 !important;
+    margin: 12px 16px !important;
+}
+
+/* ポップアップ内のタイトルやテキスト */
+.leaflet-popup-content h3, 
+.leaflet-popup-content p {
+    color: #2c3e35 !important;
+}
