@@ -12,10 +12,8 @@
         <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
         
         <link rel="stylesheet" href="css/style.css">
-
     </head>
-    <!-- 【修正点1】flex-col を追加して「ヘッダー」と「コンテンツ」を縦に並べる -->
-   <body class="flex flex-col h-screen text-slate-200 overflow-hidden">
+   <body class="flex flex-col h-screen overflow-hidden">
 
     <!-- ヘッダー（上段） -->
     <header>
@@ -36,7 +34,7 @@
         </nav>
     </header>
 
-    <!-- 【修正点1】ヘッダー下のコンテンツ領域（ここから下を横並び flex にする） -->
+    <!-- ヘッダー下のコンテンツ領域 -->
     <div class="flex flex-1 w-full h-full relative overflow-hidden">
 
         <!-- ローディング画面 -->
@@ -147,13 +145,12 @@
             </div>
         </div>
 
-    </div> <!-- コンテンツ領域の終わり -->
+    </div>
 
     <!-- Leaflet & BoundaryCanvas JS -->
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/leaflet-boundary-canvas@1.0.0/src/BoundaryCanvas.js"></script>
     <script src="js/common.js"></script>
-    <!-- 【修正点2】category.jsonのエラーが出る場合は、JSONを読み込んでいるJSファイル（map.js）の記述やパスを確認、または地図を使わないページならコメントアウトします -->
     <script src="js/map.js"></script>
 </body>
 </html>

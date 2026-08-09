@@ -4,10 +4,10 @@ body, html {
     padding: 0;
     font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
     background-color: #d2b48c;
-    color: #2d3748;
+    color: #2c3e35;
 }
 
-/* --- ヘッダー・ナビゲーション (CSS定義) --- */
+/* --- ヘッダー・ナビゲーション --- */
 header {
     display: flex;
     align-items: center;
@@ -48,7 +48,6 @@ nav ul {
     padding: 0;
 }
 
-/* ナビゲーションリンク（基本：白） */
 nav ul a,
 nav ul a:visited {
     color: #ffffff;
@@ -58,15 +57,13 @@ nav ul a:visited {
     transition: color 0.2s ease;
 }
 
-/* ホバー時（灰色） */
 nav ul a:hover {
     color: #9ca3af;
 }
 
-/* 開いているページ / クリック時（タンカラー） */
 nav ul a:active,
 nav ul a.active {
-    color: #d2b48c; /* タンカラー */
+    color: #d2b48c;
 }
 
 /* --- 地図・UI関連 --- */
@@ -76,12 +73,14 @@ nav ul a.active {
     z-index: 1;
     background: transparent;
 }
+
 .leaflet-control-zoom {
     border: none !important;
     box-shadow: 0 4px 12px rgba(0,0,0,0.15) !important;
     border-radius: 12px !important;
     overflow: hidden;
 }
+
 .leaflet-bar a {
     background-color: #1e3a2b !important;
     color: #f8fafc !important;
@@ -89,32 +88,25 @@ nav ul a.active {
     transition: background 0.2s, color 0.2s;
     border-radius: 0 !important;
 }
+
 .leaflet-bar a:hover {
     background-color: #2a503c !important;
 }
+
 .edit-active-cursor {
     cursor: cell !important;
 }
+
 .fade-in-el {
     animation: fadeIn 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
+
 @keyframes fadeIn {
     from { opacity: 0; transform: scale(0.95); }
     to { opacity: 1; transform: scale(1); }
 }
-.leaflet-popup-content-wrapper {
-    background: #0f172a !important;
-    color: #f8fafc !important;
-    border: 1px solid #334155 !important;
-    border-radius: 12px !important;
-    padding: 4px !important;
-}
-.leaflet-popup-tip {
-    background: #0f172a !important;
-    border-left: 1px solid #334155 !important;
-    border-bottom: 1px solid #334155 !important;
-}
-/* ローディングインジケータ */
+
+/* --- ローディングインジケータ --- */
 .loading-overlay {
     position: fixed;
     inset: 0;
@@ -123,11 +115,12 @@ nav ul a.active {
     z-index: 9999;
     display: flex;
     justify-content: center;
-    items-center: center;
+    align-items: center;
     opacity: 0;
     pointer-events: none;
     transition: opacity 0.3s ease;
 }
+
 .loading-overlay.active {
     opacity: 1;
     pointer-events: auto;
@@ -137,86 +130,103 @@ body input[type="text"],
 body input[type="tel"],
 body textarea,
 body select {
-    caret-color: transparent !important;
+    caret-color: auto;
 }
 
+/* ==========================================
+   サイドバー & 検索・フィルター領域 (CSS一括管理)
+   ========================================== */
+
 #sidebar {
-    background-color: #f5f2eb; /* 温かみのあるオフホワイト */
-    color: #2c3e35;            /* 深みのあるダークグリーン系 */
+    background-color: #f5f2eb; /* オフホワイト */
+    color: #2c3e35;            /* ダークグリーン */
     border-right: 1px solid #d8d0c5;
 }
 
-/* 2. 検索入力エリア */
+/* 検索入力ボックス */
 .search-input {
-    background-color: #ffffff !important;
-    color: #2c3e35 !important;
+    background-color: #ffffff;
+    color: #2c3e35;
     border: 1px solid #d8d0c5;
 }
+
 .search-input::placeholder {
     color: #8a968d;
 }
+
 .search-icon {
     color: #6a7b70;
 }
 
-/* 3. カテゴリ絞り込み（アコーディオン） */
+/* カテゴリ絞り込み（アコーディオン） */
 .filter-accordion {
     background-color: #ffffff;
     border: 1px solid #d8d0c5;
     color: #2c3e35;
 }
 
-/* 4. 件数表示テキスト */
+.filter-label {
+    color: #4a5d52;
+}
+
+.filter-label:hover {
+    color: #2c3e35;
+}
+
+/* 件数カウント */
 .list-counter {
     color: #6a7b70;
 }
 
-/* 5. スポットカード（JavaScript側で生成される各項目） */
-#spot-list > div {
+.no-spot-msg {
+    color: #8a968d;
+}
+
+/* ==========================================
+   スポットカード（サイドバー一覧アイテム）
+   ========================================== */
+
+.spot-card {
     background-color: #ffffff;
     color: #2c3e35;
     border: 1px solid #e2dacd;
-    border-radius: 12px;
-    padding: 10px 12px;
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
-    transition: all 0.2s ease;
 }
 
-/* カードのホバー（マウス載せ）時 */
-#spot-list > div:hover {
-    border-color: #2d5a3e; /* ヘッダーと同系の深緑 */
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-    transform: translateY(-1px);
+.spot-card:hover {
+    border-color: #2d5a3e;
+    background-color: #faf8f5;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.08);
 }
 
-/* ==========================================
-   サイドバー内のテキスト色修正
-   ========================================== */
-
-/* カード内のタイトルや本文をダークグリーン〜濃いグレーにする */
-#spot-list {
-    color: #2c3e35 !important;
-}
-
-#spot-list h2, 
-#spot-list h3, 
-#spot-list p, 
-#spot-list span, 
-#spot-list div {
+.spot-title {
     color: #2c3e35;
 }
 
+.spot-address {
+    color: #6a7b70;
+}
+
+.spot-address .material-icons {
+    color: #8a968d;
+}
+
+.spot-desc {
+    color: #6a7b70;
+    border-color: #e2dacd;
+}
 
 /* ==========================================
-   地図上のポップアップ（黒ピン吹き出し）の修正
+   地図上のポップアップ（吹き出し）
    ========================================== */
 
-/* 吹き出し全体を明るい背景とダークテキストに変更 */
 .leaflet-popup-content-wrapper, 
 .leaflet-popup-tip {
     background-color: #ffffff !important;
     color: #2c3e35 !important;
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15) !important;
+    border: 1px solid #e2dacd !important;
+    border-radius: 12px !important;
 }
 
 .leaflet-popup-content {
@@ -224,20 +234,27 @@ body select {
     margin: 12px 16px !important;
 }
 
-/* ポップアップ内のタイトルやテキスト */
-.leaflet-popup-content h3, 
-.leaflet-popup-content p {
-    color: #2c3e35 !important;
+.popup-header {
+    border-color: #e2dacd;
 }
 
-/* スポットカード内のすべてのテキストを濃い色に強制統一 */
-#spot-list *,
-.spot-item * {
-    color: #2c3e35 !important;
+.popup-title {
+    color: #2c3e35;
 }
 
-/* カテゴリタグなどの背景が明るすぎて文字が見えにくい場合の調整 */
-#spot-list .tag,
-#spot-list [class*="bg-"] {
-    color: #2c3e35 !important;
+.popup-info-item {
+    color: #4a5d52;
+}
+
+.popup-info-item .material-icons {
+    color: #8a968d;
+}
+
+.popup-tel-link {
+    color: #2563eb;
+}
+
+.popup-desc {
+    color: #6a7b70;
+    border-color: #e2dacd;
 }

@@ -1,5 +1,5 @@
 // ==========================================
-// js/index.js - 一般ユーザー画面専用スクリプト
+// js/map.js - 一般ユーザー画面専用スクリプト
 // ==========================================
 
 let map;
@@ -13,7 +13,7 @@ let appState = {
 const activeMarkers = new Map();
 
 window.onload = async function() {
-    // 1. マップの初期化（common.jsの関数を使用）
+    // 1. マップの初期化
     map = initBaseMap();
 
     // 画面サイズに応じたサイドバーの初期状態設定
@@ -22,7 +22,7 @@ window.onload = async function() {
 
     // 2. カテゴリマスタの取得とフィルターの構築
     categoriesMaster = await loadCategoryMaster();
-    window.categoriesMaster = categoriesMaster; // ← windowオブジェクトにも確実にセット
+    window.categoriesMaster = categoriesMaster;
 
     const uniqueCategories = [...new Set(categoriesMaster.map(item => item.category))];
     appState.activeCategories = [...uniqueCategories];
@@ -41,7 +41,7 @@ function getCategoryConfig(categoryName) {
     return categoriesMaster.find(item => item.category === categoryName) || { color: "#8b5cf6" };
 }
 
-// カテゴリフィルター（アコーディオン内チェックボックス）生成
+// カテゴリフィルター生成
 function buildCategoryFilter() {
     const container = document.getElementById("filter-checkboxes-container");
     if (!container) return;
@@ -52,16 +52,15 @@ function buildCategoryFilter() {
     uniqueCategories.forEach(category => {
         const config = getCategoryConfig(category);
         const label = document.createElement("label");
-        label.className = "flex items-center gap-2 cursor-pointer text-slate-300 hover:text-white text-xs py-0.5 select-none";
+        label.className = "flex items-center gap-2 cursor-pointer text-xs py-0.5 select-none filter-label";
         label.innerHTML = `
-            <input type="checkbox" checked data-category="${category}" class="category-checkbox rounded border-slate-700 bg-slate-900">
-            <span class="w-2.5 h-2.5 rounded-full inline-block" style="background-color:${config.color}"></span>
+            <input type="checkbox" checked data-category="${category}" class="category-checkbox rounded">
+            <span class="w-2.5 h-2.5 rounded-full inline-block shrink-0" style="background-color:${config.color}"></span>
             <span>${category}</span>
         `;
         container.appendChild(label);
     });
 
-    // チェックボックス変更イベント
     document.querySelectorAll(".category-checkbox").forEach(chk => {
         chk.addEventListener("change", function () {
             const cat = this.dataset.category;
@@ -75,45 +74,41 @@ function buildCategoryFilter() {
     });
 }
 
-// 閲覧用ポップアップHTML構築（編集・削除ボタンは除外）
+// ポップアップHTML構築
 function buildPopupHTML(spot) {
     const config = getCategoryConfig(spot.category);
     const subLabel = spot.subcategory ? ` · ${spot.subcategory}` : "";
     
     let html = `
-        <div class="p-1 text-slate-200 flex flex-col gap-2 min-w-[240px] leading-relaxed select-text text-xs">
-            <div class="border-b border-slate-700 pb-1.5">
-                <h4 class="font-bold text-sm text-white break-all">${spot.name}</h4>
+        <div class="map-popup-inner p-1 flex flex-col gap-2 min-w-[240px] leading-relaxed select-text text-xs">
+            <div class="popup-header border-b pb-1.5">
+                <h4 class="popup-title font-bold text-sm break-all">${spot.name}</h4>
                 <span class="text-[9px] px-2 py-0.5 mt-1 inline-block rounded-full border font-bold tracking-wider" style="background-color: ${config.color}20; border-color: ${config.color}50; color: ${config.color};">
                     ${spot.category}${subLabel}
                 </span>
             </div>
     `;
     
-    if (spot.address) html += `<div class="flex items-start gap-1.5 text-slate-300"><span class="material-icons text-slate-400 shrink-0" style="font-size:13px; margin-top:2px;">place</span><span class="break-all">${spot.address}</span></div>`;
-    if (spot.hours) html += `<div class="flex items-start gap-1.5 text-slate-300"><span class="material-icons text-slate-400 shrink-0" style="font-size:13px; margin-top:2px;">schedule</span><span class="break-all">${spot.hours}</span></div>`;
+    if (spot.address) html += `<div class="popup-info-item flex items-start gap-1.5"><span class="material-icons shrink-0" style="font-size:13px; margin-top:2px;">place</span><span class="break-all">${spot.address}</span></div>`;
+    if (spot.hours) html += `<div class="popup-info-item flex items-start gap-1.5"><span class="material-icons shrink-0" style="font-size:13px; margin-top:2px;">schedule</span><span class="break-all">${spot.hours}</span></div>`;
     if (spot.phone_fixed || spot.phone_mobile) {
         const tel = spot.phone_fixed || spot.phone_mobile;
-        html += `<div class="flex items-center gap-1.5 text-slate-300"><span class="material-icons text-slate-400 shrink-0" style="font-size:13px;">phone</span><a href="tel:${tel}" class="break-all text-sky-400 hover:underline">${tel}</a></div>`;
+        html += `<div class="popup-info-item flex items-center gap-1.5"><span class="material-icons shrink-0" style="font-size:13px;">phone</span><a href="tel:${tel}" class="popup-tel-link break-all hover:underline">${tel}</a></div>`;
     }
-    if (spot.desc) html += `<p class="text-slate-400 mt-1 pt-1.5 border-t border-slate-800/60 italic break-all text-[11px]">${spot.desc}</p>`;
+    if (spot.desc) html += `<p class="popup-desc mt-1 pt-1.5 border-t italic break-all text-[11px]">${spot.desc}</p>`;
     
     html += `</div>`;
     return html;
 }
 
-// スポットのマーカー描画
+// マーカー描画
 function renderSpotOnMap(spot) {
     const lat = Number(spot.lat);
     const lng = Number(spot.lng);
     if (!lat || !lng) return;
 
-    // 大カテゴリ、小カテゴリ、マスタを明示的に渡す
     const customIcon = createCustomIcon(spot.category, spot.subcategory, categoriesMaster);
-
-    const marker = L.marker([lat, lng], { 
-        icon: customIcon 
-    });
+    const marker = L.marker([lat, lng], { icon: customIcon });
     
     marker.bindPopup(buildPopupHTML(spot), { maxWidth: 280, closeButton: false });
     
@@ -125,7 +120,7 @@ function renderSpotOnMap(spot) {
     activeMarkers.set(spot.id, marker);
 }
 
-// 絞り込み＆検索の適用
+// 絞り込み＆検索適用
 function applyFilterAndSearch() {
     activeMarkers.forEach(marker => map.removeLayer(marker));
     activeMarkers.clear();
@@ -156,7 +151,7 @@ function updateSpotListUI(displaySpots) {
     listContainer.innerHTML = '';
 
     if (displaySpots.length === 0) {
-        listContainer.innerHTML = `<div class="text-center py-12 text-slate-500 text-xs italic">該当するスポットはありません。</div>`;
+        listContainer.innerHTML = `<div class="no-spot-msg text-center py-12 text-xs italic">該当するスポットはありません。</div>`;
         return;
     }
 
@@ -165,15 +160,16 @@ function updateSpotListUI(displaySpots) {
         const subLabel = spot.subcategory ? ` · ${spot.subcategory}` : "";
 
         const card = document.createElement('div');
-        card.className = `bg-slate-950/45 border border-slate-800 hover:border-slate-700 hover:bg-slate-950/70 p-3 rounded-xl flex flex-col gap-1.5 cursor-pointer transition-all hover:translate-x-1 text-slate-200`;
+        // 色指定クラスを削り、CSS用の「spot-card」を付与
+        card.className = `spot-card p-3 rounded-xl flex flex-col gap-1.5 cursor-pointer transition-all hover:translate-x-1`;
         
         let detailsHTML = '';
-        if (spot.address) detailsHTML += `<div class="text-[11px] text-slate-400 flex items-start gap-1"><span class="material-icons text-slate-500 shrink-0" style="font-size:11px; margin-top:1px;">place</span><span class="truncate">${spot.address}</span></div>`;
-        if (spot.desc) detailsHTML += `<p class="text-[11px] text-slate-400 mt-0.5 line-clamp-2 italic break-all border-t border-slate-800/60 pt-1">${spot.desc}</p>`;
+        if (spot.address) detailsHTML += `<div class="spot-address text-[11px] flex items-start gap-1"><span class="material-icons shrink-0" style="font-size:11px; margin-top:1px;">place</span><span class="truncate">${spot.address}</span></div>`;
+        if (spot.desc) detailsHTML += `<p class="spot-desc text-[11px] mt-0.5 line-clamp-2 italic break-all border-t pt-1">${spot.desc}</p>`;
 
         card.innerHTML = `
             <div class="flex justify-between items-start gap-2">
-                <h4 class="font-bold text-xs truncate text-white max-w-[145px]">${spot.name}</h4>
+                <h4 class="spot-title font-bold text-xs truncate max-w-[145px]">${spot.name}</h4>
                 <span class="text-[8px] px-1.5 py-0.5 rounded-full border font-bold shrink-0" style="background-color: ${config.color}20; border-color: ${config.color}50; color: ${config.color};">${spot.category}${subLabel}</span>
             </div>
             ${detailsHTML}
@@ -191,23 +187,19 @@ function updateSpotListUI(displaySpots) {
 
 // イベント設定
 function setupEventListeners() {
-    // リセットボタン
     document.getElementById('btn-reset-view').addEventListener('click', () => {
         map.flyTo(MAP_DEFAULT_CENTER, MAP_DEFAULT_ZOOM, { duration: 1.2 });
     });
 
-    // サイドバートグル
     document.getElementById('toggle-sidebar').addEventListener('click', () => {
         setSidebarState(!appState.sidebarOpen);
     });
 
-    // 検索入力
     document.getElementById('search-input').addEventListener('input', (e) => {
         appState.searchQuery = e.target.value;
         applyFilterAndSearch();
     });
 
-    // Infoモーダル制御
     const infoModal = document.getElementById('info-modal');
     if (document.getElementById('btn-info') && infoModal) {
         document.getElementById('btn-info').addEventListener('click', () => {
@@ -225,7 +217,6 @@ function setupEventListeners() {
         });
     }
 
-    // リサイズ対応
     window.addEventListener('resize', () => {
         if (window.innerWidth < 768) setSidebarState(false);
         else setSidebarState(true);
