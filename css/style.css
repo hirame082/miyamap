@@ -298,3 +298,63 @@ body select {
     color: #6a7b70;
     border-color: #e2dacd;
 }
+
+/* 全体を囲む角丸の枠 */
+.notice-container {
+  border: 2px solid #e0dcd3; /* タンカラーに合う落ち着いた枠色 */
+  border-radius: 16px;       /* しっかりめの角丸 */
+  padding: 24px;
+  background-color: #fff;   /* 背景を白にして浮き立たせる */
+}
+
+/* 太文字の見出し */
+.notice-title {
+  font-size: 20px;
+  font-weight: bold;
+  margin-bottom: 16px;
+  color: #333;
+}
+
+/* 横並び＆スライドエリア */
+.notice-slider {
+  display: flex;
+  gap: 16px;
+  overflow-x: auto;          /* 横スクロールを許可 */
+  scroll-snap-type: x mandatory; /* スライド時にピタッと止まる質感 */
+  padding-bottom: 8px;       /* スクロールバーとの隙間 */
+}
+
+/* スクロールバーの見た目をすっきりさせる（任意） */
+.notice-slider::-webkit-scrollbar {
+  height: 6px;
+}
+.notice-slider::-webkit-scrollbar-thumb {
+  background-color: #ccc;
+  border-radius: 3px;
+}
+
+/* スライドするカード1個あたりの幅設定 */
+.notice-card {
+  flex: 0 0 280px;            /* 幅280pxで固定して横に並べる */
+  scroll-snap-align: start;
+  background: #fdfdfd;
+  border: 1px solid #eee;
+  border-radius: 8px;
+  padding: 16px;
+}
+
+.notice-date {
+  font-size: 12px;
+  color: #888;
+}
+
+.notice-card-title {
+  font-size: 15px;
+  font-weight: bold;
+  margin: 6px 0;
+}
+
+.notice-text {
+  font-size: 13px;
+  color: #555;
+}
