@@ -139,3 +139,52 @@ body textarea,
 body select {
     caret-color: transparent !important;
 }
+
+#sidebar {
+    background-color: #f5f2eb; /* 温かみのあるオフホワイト */
+    color: #2c3e35;            /* 深みのあるダークグリーン系 */
+    border-right: 1px solid #d8d0c5;
+}
+
+/* 2. 検索入力エリア */
+.search-input {
+    background-color: #ffffff !important;
+    color: #2c3e35 !important;
+    border: 1px solid #d8d0c5;
+}
+.search-input::placeholder {
+    color: #8a968d;
+}
+.search-icon {
+    color: #6a7b70;
+}
+
+/* 3. カテゴリ絞り込み（アコーディオン） */
+.filter-accordion {
+    background-color: #ffffff;
+    border: 1px solid #d8d0c5;
+    color: #2c3e35;
+}
+
+/* 4. 件数表示テキスト */
+.list-counter {
+    color: #6a7b70;
+}
+
+/* 5. スポットカード（JavaScript側で生成される各項目） */
+#spot-list > div {
+    background-color: #ffffff;
+    color: #2c3e35;
+    border: 1px solid #e2dacd;
+    border-radius: 12px;
+    padding: 10px 12px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+    transition: all 0.2s ease;
+}
+
+/* カードのホバー（マウス載せ）時 */
+#spot-list > div:hover {
+    border-color: #2d5a3e; /* ヘッダーと同系の深緑 */
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    transform: translateY(-1px);
+}
