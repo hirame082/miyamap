@@ -37,11 +37,51 @@
 }
 
 /*プチ解説*/
-.description{
-    display:flex;
-    font-size:20%;
-    text-align:center;
+.sitetext {
+    display: flex;
+    justify-content: center; /* 横方向の真ん中寄せ */
+}
+
+/* p タグ自体の設定 */
+.description {
     width: 50%;
+    text-align: center;      /* 文章自体を中央揃え */
+    font-size: 100%;         /* ※20%だと小さすぎて見えなくなるため調整 */
+}
+
+/* 1. 全体を囲む箱（基準点） */
+.hero-container {
+    position: relative; /* 子要素（文字）の基準位置にする */
+    width: 100vw;       /* 画面の横幅いっぱいにする */
+    left: 50%;          /* 親要素の余白を無視して画面中央に寄せるための指定 */
+    transform: translateX(-50%);
+    height: 80vh;       /* 画像の高さを画面高さの80%にする（お好みで調整可） */
+    overflow: hidden;
+}
+
+/* 2. 画像を画面いっぱいに広げる */
+.hero-image {
+    width: 100%;
+    height: 100%;
+    object-fit: cover; /* 縦横比を保ったまま枠いっぱいを埋める */
+}
+
+/* 3. 画像の上に文字を重ねて真ん中に配置＆縦書きにする */
+.hero-text {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%); /* 上下左右の完璧な真ん中に配置 */
+    
+    writing-mode: vertical-rl; /* ★ 縦書きにする指定（右から左へ） */
+    
+    font-size: 1.5rem;   /* 文字サイズ */
+    font-weight: bold;   /* 太字 */
+    color: #ffffff;      /* 文字色（背景画像に合わせて見やすい色に変更してください） */
+    letter-spacing: 0.2em; /* 文字と文字の間隔を少し広げる */
+    
+    /* 文字が見えにくい場合は背景を少し暗くするか、影をつけます */
+    text-shadow: 0 2px 8px rgba(0, 0, 0, 0.6); 
 }
 
 /* スライドするカード1個あたりの幅設定 ワードプレス実装時に消すと思う。 */
