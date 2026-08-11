@@ -1,3 +1,7 @@
+/* ==========================================
+   基本設定・共通スタイル
+   ========================================== */
+
 body, html {
     height: 100%;
     margin: 0;
@@ -20,19 +24,6 @@ header {
     position: relative;
     z-index: 1001;
     flex-shrink: 0;
-}
-
-.header-brand {
-    display: flex;
-    align-items: center;
-    gap: 0.75rem;
-}
-
-.header-title {
-    font-size: 1.25rem;
-    font-weight: bold;
-    color: #ffffff;
-    margin: 0;
 }
 
 nav {
@@ -68,74 +59,7 @@ nav ul a.active {
     color: #d2b48c !important; /* タンカラー */
 }
 
-/* --- 地図・UI関連 --- */
-#map {
-    width: 100%;
-    height: 100%;
-    z-index: 1;
-    background: transparent;
-}
-
-/* ==========================================
-   地図コントロールボタン（デザイン統一 & 最前面化）
-   ========================================== */
-
-.map-controls {
-    z-index: 1000 !important;
-    pointer-events: auto;
-}
-
-/* 共通ボタン基本スタイル */
-.ctrl-btn {
-    background-color: #1e3a2b !important; /* ヘッダーと同じ深緑 */
-    color: #ffffff !important;
-    border: 1px solid #162e22 !important;
-    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.35) !important;
-    transition: all 0.2s ease;
-}
-
-.ctrl-btn:hover {
-    background-color: #2a503c !important;
-    transform: translateY(-2px);
-}
-
-.ctrl-btn .material-icons {
-    color: #ffffff !important;
-}
-
-/* Leaflet ズームコントロールのスタイル整形 */
-.leaflet-control-zoom {
-    margin: 0 !important;
-    border: none !important;
-    background: transparent !important;
-    box-shadow: none !important;
-}
-
-.leaflet-bar a {
-    background-color: #1e3a2b !important;
-    color: #ffffff !important;
-    width: 40px !important;
-    height: 40px !important;
-    line-height: 40px !important;
-    font-size: 20px !important;
-    font-weight: bold;
-    border: none !important;
-    border-bottom: 1px solid #162e22 !important;
-    transition: background-color 0.2s ease;
-    display: flex !important;
-    align-items: center;
-    justify-content: center;
-}
-
-.leaflet-bar a:last-child {
-    border-bottom: none !important;
-}
-
-.leaflet-bar a:hover {
-    background-color: #2a503c !important;
-    color: #ffffff !important;
-}
-
+/* --- 汎用設定 --- */
 .edit-active-cursor {
     cursor: cell !important;
 }
@@ -149,212 +73,9 @@ nav ul a.active {
     to { opacity: 1; transform: scale(1); }
 }
 
-/* --- ローディングインジケータ --- */
-.loading-overlay {
-    position: fixed;
-    inset: 0;
-    background: rgba(15, 23, 42, 0.7);
-    backdrop-filter: blur(4px);
-    z-index: 9999;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    opacity: 0;
-    pointer-events: none;
-    transition: opacity 0.3s ease;
-}
-
-.loading-overlay.active {
-    opacity: 1;
-    pointer-events: auto;
-}
-
 body input[type="text"],
 body input[type="tel"],
 body textarea,
 body select {
     caret-color: auto;
-}
-
-/* ==========================================
-   サイドバー & 検索・フィルター領域
-   ========================================== */
-
-#sidebar {
-    background-color: #f5f2eb;
-    color: #2c3e35;
-    border-right: 1px solid #d8d0c5;
-}
-
-.search-input {
-    background-color: #ffffff;
-    color: #2c3e35;
-    border: 1px solid #d8d0c5;
-}
-
-.search-input::placeholder {
-    color: #8a968d;
-}
-
-.search-icon {
-    color: #6a7b70;
-}
-
-.filter-accordion {
-    background-color: #ffffff;
-    border: 1px solid #d8d0c5;
-    color: #2c3e35;
-}
-
-.filter-label {
-    color: #4a5d52;
-}
-
-.filter-label:hover {
-    color: #2c3e35;
-}
-
-.list-counter {
-    color: #6a7b70;
-}
-
-.no-spot-msg {
-    color: #8a968d;
-}
-
-/* ==========================================
-   スポットカード（サイドバー一覧アイテム）
-   ========================================== */
-
-.spot-card {
-    background-color: #ffffff;
-    color: #2c3e35;
-    border: 1px solid #e2dacd;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
-}
-
-.spot-card:hover {
-    border-color: #2d5a3e;
-    background-color: #faf8f5;
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.08);
-}
-
-.spot-title {
-    color: #2c3e35;
-}
-
-.spot-address {
-    color: #6a7b70;
-}
-
-.spot-address .material-icons {
-    color: #8a968d;
-}
-
-.spot-desc {
-    color: #6a7b70;
-    border-color: #e2dacd;
-}
-
-/* ==========================================
-   地図上のポップアップ（吹き出し）
-   ========================================== */
-
-.leaflet-popup-content-wrapper, 
-.leaflet-popup-tip {
-    background-color: #ffffff !important;
-    color: #2c3e35 !important;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15) !important;
-    border: 1px solid #e2dacd !important;
-    border-radius: 12px !important;
-}
-
-.leaflet-popup-content {
-    color: #2c3e35 !important;
-    margin: 12px 16px !important;
-}
-
-.popup-header {
-    border-color: #e2dacd;
-}
-
-.popup-title {
-    color: #2c3e35;
-}
-
-.popup-info-item {
-    color: #4a5d52;
-}
-
-.popup-info-item .material-icons {
-    color: #8a968d;
-}
-
-.popup-tel-link {
-    color: #2563eb;
-}
-
-.popup-desc {
-    color: #6a7b70;
-    border-color: #e2dacd;
-}
-
-/* 全体を囲む角丸の枠 */
-.notice-container {
-  border: 2px solid #e0dcd3; /* タンカラーに合う落ち着いた枠色 */
-  border-radius: 16px;       /* しっかりめの角丸 */
-  padding: 24px;
-  background-color: #fff;   /* 背景を白にして浮き立たせる */
-}
-
-/* 太文字の見出し */
-.notice-title {
-  font-size: 20px;
-  font-weight: bold;
-  margin-bottom: 16px;
-  color: #333;
-}
-
-/* 横並び＆スライドエリア */
-.notice-slider {
-  display: flex;
-  gap: 16px;
-  overflow-x: auto;          /* 横スクロールを許可 */
-  scroll-snap-type: x mandatory; /* スライド時にピタッと止まる質感 */
-  padding-bottom: 8px;       /* スクロールバーとの隙間 */
-}
-
-/* スクロールバーの見た目をすっきりさせる（任意） */
-.notice-slider::-webkit-scrollbar {
-  height: 6px;
-}
-.notice-slider::-webkit-scrollbar-thumb {
-  background-color: #ccc;
-  border-radius: 3px;
-}
-
-/* スライドするカード1個あたりの幅設定 */
-.notice-card {
-  flex: 0 0 280px;            /* 幅280pxで固定して横に並べる */
-  scroll-snap-align: start;
-  background: #fdfdfd;
-  border: 1px solid #eee;
-  border-radius: 8px;
-  padding: 16px;
-}
-
-.notice-date {
-  font-size: 12px;
-  color: #888;
-}
-
-.notice-card-title {
-  font-size: 15px;
-  font-weight: bold;
-  margin: 6px 0;
-}
-
-.notice-text {
-  font-size: 13px;
-  color: #555;
 }
