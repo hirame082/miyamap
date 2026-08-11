@@ -38,6 +38,8 @@
 
 /*プチ解説*/
 .description{
+    display:flex;
+    font-size:20%;
     text-align:center;
     width: 50%;
 }
